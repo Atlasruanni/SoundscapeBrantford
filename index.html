@@ -68,7 +68,6 @@
         }
 
         /* Typography Enhancements */
-        /* hero-title class removed from CSS as it's no longer used for the gradient text effect */
         
         .dark-text-shadow {
             /* Text shadow removed as requested */
@@ -172,6 +171,43 @@
             box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
             font-size: 14px;
         }
+        
+        /* Overlay Containers for main content blocks */
+        .main-content-overlay {
+            position: fixed;
+            top: 50%;
+            /* Left/Right positioning handled inline or below */
+            transform: translate(0, -50%);
+            width: 90%;
+            max-width: 400px;
+            transition: opacity 0.5s, transform 0.5s;
+            z-index: 40;
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        /* Custom Confirmation Modal (Added) */
+        #confirm-modal-overlay {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0, 0, 0, 0.7);
+            z-index: 1500;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+        #confirm-modal {
+            background: rgba(28, 28, 30, 0.9);
+            backdrop-filter: blur(15px);
+            padding: 24px;
+            border-radius: 16px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            max-width: 350px;
+            text-align: center;
+        }
 
     </style>
 </head>
@@ -185,7 +221,7 @@
         </div>
     </div>
     
-    <!-- CHANGE: Full screen overlay for audio start -->
+    <!-- Full screen overlay for audio start -->
     <div id="audio-start-overlay" class="flex flex-col items-center">
         <svg xmlns="http://www.w3.org/2000/svg" width="60" height="60" viewBox="0 0 24 24" fill="currentColor" class="text-yellow-500 mb-4 animate-pulse"><path d="M12 2C6.477 2 2 6.477 2 12s4.477 10 10 10 10-4.477 10-10S17.523 2 12 2zm0 18c-4.411 0-8-3.589-8-8s3.589-8 8-8 8 3.589 8 8-3.589 8-8 8z"/><path d="M10 8l6 4-6 4V8z"/></svg>
         Tap Anywhere to Start Soundscape
@@ -194,12 +230,23 @@
     <!-- Feedback Message Box -->
     <div id="message-box"></div>
 
+    <!-- Custom Confirmation Modal (New) -->
+    <div id="confirm-modal-overlay">
+        <div id="confirm-modal">
+            <h3 class="text-xl font-bold text-red-400 mb-3">System Restart Warning</h3>
+            <p class="text-zinc-300 mb-6">Are you sure you want to restart the device? This will reload the entire application.</p>
+            <div class="flex justify-center space-x-4">
+                <button id="confirm-cancel" class="px-5 py-2 rounded-full bg-zinc-600 hover:bg-zinc-500 transition text-white">Cancel</button>
+                <button id="confirm-restart" class="px-5 py-2 rounded-full bg-red-600 hover:bg-red-500 transition text-white font-bold">Restart Now</button>
+            </div>
+        </div>
+    </div>
+
     <!-- 3D Canvas -->
     <div id="canvas-container"></div>
 
     <!-- Navigation -->
     <nav class="fixed top-0 w-full z-50 px-6 md:px-12 py-4 flex justify-between items-center pointer-events-auto">
-        <!-- CHANGE: BRANTFORD.MIX changed to BRANTFORD.SOUNDSCAPE -->
         <div class="text-lg font-bold tracking-tighter text-white">
             BRANTFORD.<span class="text-yellow-500">SOUNDSCAPE</span>
         </div>
@@ -211,19 +258,135 @@
         </div>
     </nav>
     
-    <!-- System Restart Overlay: Y: bottom-40, X: left-1/2 (50%) -->
-    <div id="maintenance-overlay" class="fixed bottom-40 left-1/2 transform -translate-x-1/2 p-3 rounded-xl bg-red-900/10 border-red-500/20 transition-opacity duration-500 z-40 opacity-0 pointer-events-none">
-        <button id="btn-restart-overlay" class="p-3 rounded-full bg-red-600 hover:bg-red-500 transition duration-200 text-white font-bold text-sm pointer-events-auto flex items-center gap-2" title="System Restart">
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11.412 10.356A8.001 8.001 0 0120 11.5M4 15V9" /></svg>
-            SYSTEM RESTART
-        </button>
+    <!-- FIXED OVERLAYS -->
+    
+    <!-- 1. Core Functions Overlay (Left-Focused) -->
+    <div id="functional-card-overlay" class="main-content-overlay left-6 max-w-md w-full px-6">
+        <div class="glass-card p-8 w-full">
+            <h2 class="section-title text-3xl font-bold mb-6 text-white text-left">Core Functions.</h2>
+            <div class="bento-grid">
+                <!-- Music -->
+                <div class="p-4 flex flex-col justify-between h-32 bg-zinc-700/50 rounded-2xl hover:bg-zinc-700/80 transition">
+                    <div class="text-yellow-400 mb-1">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3" /></svg>
+                    </div>
+                    <div>
+                        <h3 class="text-white font-semibold text-sm mb-0">Music <span class="text-xs font-mono ml-1 text-yellow-300 opacity-70">⠍⠥⠎⠊⠉</span></h3>
+                        <p class="text-zinc-400 text-xs leading-snug">Calming soundscapes.</p>
+                    </div>
+                </div>
+
+                <!-- Story -->
+                <div class="p-4 flex flex-col justify-between h-32 bg-zinc-700/50 rounded-2xl hover:bg-zinc-700/80 transition">
+                    <div class="text-yellow-400 mb-1">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" /></svg>
+                    </div>
+                    <div>
+                        <h3 class="text-white font-semibold text-sm mb-0">Story <span class="text-xs font-mono ml-1 text-yellow-300 opacity-70">⠎⠞⠕⠗⠽</span></h3>
+                        <p class="text-zinc-400 text-xs leading-snug">Local history & culture.</p>
+                    </div>
+                </div>
+
+                <!-- City Info -->
+                <div class="p-4 flex flex-col justify-between h-32 bg-zinc-700/50 rounded-2xl hover:bg-zinc-700/80 transition">
+                    <div class="text-yellow-400 mb-1">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                    </div>
+                    <div>
+                        <h3 class="text-white font-semibold text-sm mb-0">City Info <span class="text-xs font-mono ml-1 text-yellow-300 opacity-70">⠉⠊⠞⠽ ⠊⠝⠋⠕</span></h3>
+                        <p class="text-zinc-400 text-xs leading-snug">AI-powered updates.</p>
+                    </div>
+                </div>
+
+                <!-- Record -->
+                <div class="p-4 flex flex-col justify-between h-32 bg-zinc-700/50 rounded-2xl hover:bg-zinc-700/80 transition">
+                    <div class="text-red-500 mb-1">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="currentColor" viewBox="0 0 24 24"><circle cx="12" cy="12" r="6" /></svg>
+                    </div>
+                    <div>
+                        <h3 class="text-white font-semibold text-sm mb-0">Record <span class="text-xs font-mono ml-1 text-yellow-300 opacity-70">⠗⠑⠉⠕⠗⠙</span></h3>
+                        <p class="text-zinc-400 text-xs leading-snug">Leave feedback.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 2. Universal Control Overlay (Right-Focused) -->
+    <div id="universal-card-overlay" class="main-content-overlay right-6 max-w-sm w-full px-6">
+        <div id="tactile-card" class="glass-card p-8 inline-block text-left w-full">
+            <h2 class="section-title text-3xl font-bold mb-6 text-white text-left">Universal Control.</h2>
+            <div class="flex items-center gap-4 mb-4">
+                <div class="w-12 h-12 rounded-full bg-yellow-500/20 flex items-center justify-center text-yellow-400">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z" /></svg>
+                </div>
+                <div>
+                    <h3 class="text-lg font-bold text-white">Tactile Dial</h3>
+                    <p class="text-xs text-zinc-500 uppercase tracking-widest">Interface</p>
+                </div>
+            </div>
+            <p class="text-zinc-300 text-sm leading-relaxed">
+                A single, intuitive dial controls volume and playback using globally recognized symbols.
+                <span class="text-white block mt-2 font-medium">The central green light pulses to represent battery life and active device status.</span>
+            </p>
+            
+            <!-- Universal Control Overlay (Buttons) -->
+            <div id="universal-overlay" class="mt-8 transition-opacity duration-500">
+                <div id="overlay-controls-container" class="glass-card p-4 pointer-events-auto w-full mx-auto" style="border-radius: 30px; border: none; background: rgba(0,0,0,0.3); backdrop-filter: blur(15px);">
+                    <!-- Horizontal Layout of Controls -->
+                    <div id="overlay-controls" class="flex justify-around items-center space-x-2 text-white">
+                        
+                        <!-- Vol Up (Plus Icon) -->
+                        <button id="btn-vol-up" class="w-12 h-12 p-2 rounded-full hover:bg-white/20 transition duration-200" title="Volume Up">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14"/><path d="M5 12h14"/></svg>
+                        </button>
+
+                        <!-- Last Track (Prev) -->
+                        <button id="btn-prev" class="w-12 h-12 p-2 rounded-full hover:bg-white/20 transition duration-200" title="Previous Track">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="19 20 9 12 19 4 19 20"/><line x1="5" x2="5" y1="19" y2="5"/></svg>
+                        </button>
+                        
+                        <!-- Play/Pause Toggle -->
+                        <button id="btn-play-pause-overlay" class="w-12 h-12 p-2 rounded-full hover:bg-white/20 transition duration-200" title="Play/Pause">
+                            <svg id="play-pause-icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="currentColor" class="text-yellow-500"><path d="M3 22v-20l18 10-18 10z"/></svg>
+                        </button>
+
+                        <!-- Next Track -->
+                        <button id="btn-next" class="w-12 h-12 p-2 rounded-full hover:bg-white/20 transition duration-200" title="Next Track">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 4 15 12 5 20 5 4"/><line x1="19" x2="19" y1="5" y2="19"/></svg>
+                        </button>
+
+                        <!-- Vol Down (Minus Icon) -->
+                        <button id="btn-vol-down" class="w-12 h-12 p-2 rounded-full hover:bg-white/20 transition duration-200" title="Volume Down">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" x2="19" y1="12" y2="12"/></svg>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 3. Maintenance Access Overlay (Top-Focused) -->
+    <div id="maintenance-access-overlay" class="main-content-overlay top-24 left-1/2 transform -translate-x-1/2 max-w-3xl w-full px-6">
+        <div class="glass-card p-1 flex items-center gap-4 bg-red-900/10 border-red-500/20">
+            <div class="bg-red-500/10 p-4 h-full flex items-center rounded-l-[28px]">
+                <span class="text-red-500 font-bold text-xs uppercase tracking-wider rotate-180" style="writing-mode: vertical-rl;">Admin</span>
+            </div>
+            <div class="py-4 pr-6">
+                <h3 class="text-white font-bold text-lg">Maintenance Access</h3>
+                <p class="text-zinc-400 text-sm mt-1">
+                    The <span class="text-red-400">Restart Button</span> is concealed on the bottom face, accessible only to City staff for secure resetting and diagnostics.
+                </p>
+            </div>
+        </div>
     </div>
 
+
+    <!-- SCROLL ANCHOR SECTIONS -->
+    
     <!-- Section 1: Hero / Overview -->
     <section id="front" class="content-section justify-center text-center px-6">
         <div class="fade-in-section max-w-4xl mx-auto mt-[40vh] md:mt-[35vh]">
-            <!-- Removed Model 2.0 tag here -->
-            <!-- UPDATED: Applying section-title styling (including text shadow) to the hero title -->
             <h1 class="section-title text-5xl md:text-8xl font-bold mb-6 text-white">
                 Public Atmosphere.<br>Reimagined.
             </h1>
@@ -234,138 +397,27 @@
         <div class="scroll-indicator text-zinc-500 text-xs font-medium tracking-widest uppercase">Scroll</div>
     </section>
 
-    <!-- Section 2: Functional Keys (Bento Grid Layout) -->
-    <section id="functional" class="content-section justify-start px-6 md:px-24">
-        <div class="fade-in-section w-full max-w-md">
-            <h2 class="section-title text-4xl font-bold mb-8 text-white">Core Functions.</h2>
-            
-            <div class="bento-grid">
-                <!-- Music -->
-                <div class="glass-card p-6 flex flex-col justify-between h-40">
-                    <div class="text-yellow-400 mb-2">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3" /></svg>
-                    </div>
-                    <div>
-                        <h3 class="text-white font-semibold text-sm mb-1">Music <span class="text-xs font-mono ml-2 text-yellow-300 opacity-70">⠍⠥⠎⠊⠉</span></h3>
-                        <p class="text-zinc-400 text-xs leading-snug">Curated, calming soundscapes for safer streets.</p>
-                    </div>
-                </div>
+    <!-- Section 2: Functional Keys (Anchor only) -->
+    <section id="functional" class="content-section h-[120vh]"></section>
 
-                <!-- Story -->
-                <div class="glass-card p-6 flex flex-col justify-between h-40">
-                     <div class="text-yellow-400 mb-2">
-                         <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" /></svg>
-                     </div>
-                    <div>
-                        <h3 class="text-white font-semibold text-sm mb-1">Story <span class="text-xs font-mono ml-2 text-yellow-300 opacity-70">⠎⠞⠕⠗⠽</span></h3>
-                        <p class="text-zinc-400 text-xs leading-snug">Local history and culture fostering connection.</p>
-                    </div>
-                </div>
+    <!-- Section 3: Universal Controls (Anchor only) -->
+    <section id="universal" class="content-section h-[120vh]"></section>
 
-                <!-- City Info -->
-                <div class="glass-card p-6 flex flex-col justify-between h-40">
-                     <div class="text-yellow-400 mb-2">
-                         <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-                     </div>
-                    <div>
-                        <h3 class="text-white font-semibold text-sm mb-1">City Info <span class="text-xs font-mono ml-2 text-yellow-300 opacity-70">⠉⠊⠞⠽ ⠊⠝⠋⠕</span></h3>
-                        <p class="text-zinc-400 text-xs leading-snug">AI-powered updates on weather & events.</p>
-                    </div>
-                </div>
-
-                <!-- Record -->
-                <div class="glass-card p-6 flex flex-col justify-between h-40 bg-zinc-800/80 border-zinc-600/30">
-                     <div class="text-red-500 mb-2 animate-pulse">
-                         <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="currentColor" viewBox="0 0 24 24"><circle cx="12" cy="12" r="6" /></svg>
-                     </div>
-                    <div>
-                        <h3 class="text-white font-semibold text-sm mb-1">Record <span class="text-xs font-mono ml-2 text-yellow-300 opacity-70">⠗⠑⠉⠕⠗⠙</span></h3>
-                        <p class="text-zinc-400 text-xs leading-snug">Leave feedback or messages for the community.</p>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </section>
-
-    <!-- Section 3: Universal Controls -->
-    <section id="universal" class="content-section justify-end px-6 md:px-24">
-        <div class="fade-in-section w-full max-w-sm text-right">
-            <h2 class="section-title text-4xl font-bold mb-6 text-white">Universal Control.</h2>
-            <!-- Tactile Dial Info Card -->
-            <div id="tactile-card" class="glass-card p-8 inline-block text-left w-full">
-                <div class="flex items-center gap-4 mb-4">
-                    <div class="w-12 h-12 rounded-full bg-yellow-500/20 flex items-center justify-center text-yellow-400">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z" /></svg>
-                    </div>
-                    <div>
-                        <h3 class="text-lg font-bold text-white">Tactile Dial</h3>
-                        <p class="text-xs text-zinc-500 uppercase tracking-widest">Interface</p>
-                    </div>
-                </div>
-                <p class="text-zinc-300 text-sm leading-relaxed">
-                    A single, intuitive dial controls volume and playback using globally recognized symbols.
-                    <span class="text-white block mt-2 font-medium">The central green light pulses to represent battery life and active device status.</span>
-                </p>
-                
-                <!-- Universal Control Overlay: Now INSIDE the card, centered below the text content -->
-                <div id="universal-overlay" class="mt-8 transition-opacity duration-500">
-                    <div id="overlay-controls-container" class="glass-card p-4 pointer-events-auto w-full mx-auto" style="border-radius: 30px; border: none; background: rgba(0,0,0,0.3); backdrop-filter: blur(15px);">
-                        <!-- Horizontal Layout of Controls -->
-                        <div id="overlay-controls" class="flex justify-around items-center space-x-2 text-white">
-                            
-                            <!-- Vol Up (Plus Icon) -->
-                            <button id="btn-vol-up" class="w-12 h-12 p-2 rounded-full hover:bg-white/20 transition duration-200" title="Volume Up">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14"/><path d="M5 12h14"/></svg>
-                            </button>
-
-                            <!-- Last Track (Prev) -->
-                            <button id="btn-prev" class="w-12 h-12 p-2 rounded-full hover:bg-white/20 transition duration-200" title="Previous Track">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="19 20 9 12 19 4 19 20"/><line x1="5" x2="5" y1="19" y2="5"/></svg>
-                            </button>
-                            
-                            <!-- Play/Pause Toggle -->
-                            <button id="btn-play-pause-overlay" class="w-12 h-12 p-2 rounded-full hover:bg-white/20 transition duration-200" title="Play/Pause">
-                                <svg id="play-pause-icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="currentColor" class="text-yellow-500"><path d="M3 22v-20l18 10-18 10z"/></svg>
-                            </button>
-
-                            <!-- Next Track -->
-                            <button id="btn-next" class="w-12 h-12 p-2 rounded-full hover:bg-white/20 transition duration-200" title="Next Track">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 4 15 12 5 20 5 4"/><line x1="19" x2="19" y1="5" y2="19"/></svg>
-                            </button>
-
-                            <!-- Vol Down (Minus Icon) -->
-                            <button id="btn-vol-down" class="w-12 h-12 p-2 rounded-full hover:bg-white/20 transition duration-200" title="Volume Down">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" x2="19" y1="12" y2="12"/></svg>
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </section>
-
-    <!-- Section 4: Maintenance (Clean Layout) -->
-    <section id="specs" class="content-section min-h-screen flex flex-col justify-start items-center px-6 pt-32 relative">
-        
-        <!-- Maintenance Alert Style -->
-        <div class="fade-in-section w-full max-w-3xl">
-            <div class="glass-card p-1 flex items-center gap-4 bg-red-900/10 border-red-500/20">
-                <div class="bg-red-500/10 p-4 h-full flex items-center rounded-l-[28px]">
-                    <span class="text-red-500 font-bold text-xs uppercase tracking-wider rotate-180" style="writing-mode: vertical-rl;">Admin</span>
-                </div>
-                <div class="py-4 pr-6">
-                    <h3 class="text-white font-bold text-lg">Maintenance Access</h3>
-                    <p class="text-zinc-400 text-sm mt-1">
-                        The <span class="text-red-400">Restart Button</span> is concealed on the bottom face, accessible only to City staff for secure resetting and diagnostics.
-                    </p>
-                </div>
-            </div>
-        </div>
-        
+    <!-- Section 4: Maintenance (Anchor only) -->
+    <section id="specs" class="content-section h-[120vh] flex flex-col justify-end relative">
         <footer class="absolute bottom-6 w-full text-center text-white/50 text-xs tracking-wider uppercase">
             Designed for Brantford &copy; 2025
         </footer>
     </section>
+
+    <!-- System Restart Button Overlay (Fixed, visible during Maintenance Section, Bottom-Focused) -->
+    <div id="maintenance-overlay" class="fixed bottom-40 left-1/2 transform -translate-x-1/2 p-3 rounded-xl bg-red-900/10 border-red-500/20 transition-opacity duration-500 z-40 opacity-0 pointer-events-none">
+        <button id="btn-restart-overlay" class="p-3 rounded-full bg-red-600 hover:bg-red-500 transition duration-200 text-white font-bold text-sm pointer-events-auto flex items-center gap-2" title="System Restart">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11.412 10.356A8.001 8.001 0 0120 11.5M4 15V9" /></svg>
+            SYSTEM RESTART
+        </button>
+    </div>
+
 
     <script>
     // Utility function to display temporary messages to the user
@@ -388,13 +440,19 @@
 
     // Function to update the play/pause icon appearance
     function updatePlayPauseIcon(playing) {
-        if (!playPauseIcon) return;
-        if (playing) {
-            // Show Pause icon
-            playPauseIcon.innerHTML = `<path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/>`;
-        } else {
-            // Show Play icon
-            playPauseIcon.innerHTML = `<path d="M3 22v-20l18 10-18 10z"/>`;
+        // Find icon on the 3D model
+        const icon3D = document.getElementById('play-pause-icon');
+        // Find icon on the control overlay
+        const iconOverlay = document.querySelector('#btn-play-pause-overlay svg');
+
+        const pathPause = `<path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/>`;
+        const pathPlay = `<path d="M3 22v-20l18 10-18 10z"/>`;
+        
+        if (icon3D) {
+            icon3D.innerHTML = playing ? pathPause : pathPlay;
+        }
+        if (iconOverlay) {
+            iconOverlay.innerHTML = playing ? pathPause : pathPlay;
         }
     }
 
@@ -412,7 +470,7 @@
         updatePlayPauseIcon(isPlaying);
     }
 
-    // NEW: Function to hide the initial overlay after interaction
+    // Function to hide the initial overlay after interaction
     function hideInitialOverlay() {
         const overlay = document.getElementById('audio-start-overlay');
         if (overlay) {
@@ -447,7 +505,7 @@
             
             this.loadTrack(this.currentTrackIndex);
             
-            // NEW: Auto-advance to the next track on normal end
+            // Auto-advance to the next track on normal end
             this.audioElement.addEventListener('ended', () => {
                 if (this.current === 'music' && isPlaying) {
                     this.playNextTrack();
@@ -684,8 +742,9 @@
         fillLight.position.set(-5, 0, 5);
         scene.add(fillLight);
 
-        // --- MATERIALS (UNCHANGED) ---
-        const colorYellow = 0xFFB800; 
+        // --- MATERIALS ---
+        // Model color to be more orange (0xFF9900)
+        const colorYellow = 0xFF9900; 
         const matBody = new THREE.MeshPhysicalMaterial({ color: colorYellow, roughness: 0.25, metalness: 0.05, clearcoat: 0.2, clearcoatRoughness: 0.1 });
         const matBlack = new THREE.MeshStandardMaterial({ color: 0x111111, roughness: 0.8, metalness: 0.1 });
         const colorGreen = 0x00A060; 
@@ -901,7 +960,7 @@
                         } 
                     );
                 } else if (interactiveElement.name === 'RESTART_BUTTON') {
-                    location.reload();
+                    showConfirmModal(); // Show confirmation modal instead of immediate reload
                 }
 
                 // Apply visual press for all interactive elements (dial rim is handled above)
@@ -941,6 +1000,36 @@
         }
         container.addEventListener('pointerdown', onPointerDown, false);
 
+        // --- MODAL / WARNING LOGIC (New) ---
+        function showConfirmModal() {
+            const modalOverlay = document.getElementById('confirm-modal-overlay');
+            if (modalOverlay) {
+                modalOverlay.style.display = 'flex';
+                setTimeout(() => modalOverlay.style.opacity = 1, 10);
+                AudioManager.stopAll(); // Pause all audio when modal is up
+            }
+        }
+
+        function hideConfirmModal() {
+            const modalOverlay = document.getElementById('confirm-modal-overlay');
+            if (modalOverlay) {
+                modalOverlay.style.opacity = 0;
+                setTimeout(() => {
+                    modalOverlay.style.display = 'none';
+                    if (AudioManager.hasInteracted) {
+                        AudioManager.play('music'); // Resume music after cancelling restart
+                    }
+                }, 300);
+            }
+        }
+
+        document.getElementById('confirm-cancel')?.addEventListener('click', hideConfirmModal);
+        document.getElementById('confirm-restart')?.addEventListener('click', () => {
+            showMessage("System Restarting...", 3000);
+            setTimeout(() => location.reload(), 1000);
+        });
+
+
         // --- SCROLL ANIMATION ---
         const targets = {
             'front': { cam: {x:0, y:-0.8, z:8.5}, rot: {x:0, y:0, z:0} },
@@ -950,6 +1039,8 @@
             'specs': { cam: {x:0, y:0.8, z:7}, rot: {x:THREE.MathUtils.degToRad(-90), y:0, z:0} } 
         };
         let currentSection = 'front';
+        const heroContent = document.querySelector('#front .fade-in-section');
+
 
         function updateScroll() {
             const sections = ['front', 'functional', 'universal', 'specs'];
@@ -964,36 +1055,43 @@
             });
             currentSection = bestMatch;
 
-            // NEW: Overlay Control
-            const universalOverlay = document.getElementById('universal-overlay');
-            const maintenanceOverlay = document.getElementById('maintenance-overlay');
+            // OVERLAY CONTROL LOGIC (Fixed overlays based on current section)
+            const functionalOverlay = document.getElementById('functional-card-overlay');
+            const universalCardOverlay = document.getElementById('universal-card-overlay');
+            const maintenanceAccessOverlay = document.getElementById('maintenance-access-overlay');
+            const maintenanceRestartOverlay = document.getElementById('maintenance-overlay');
             
-            // Universal Overlay relies on parent element's fade-in/out via CSS classes
-            if (universalOverlay) {
-                 // Check if parent (fade-in-section) is visible. 
-                 const isUniversalSectionVisible = document.getElementById('universal').querySelector('.fade-in-section.is-visible');
-                 if (isUniversalSectionVisible) {
-                    universalOverlay.style.opacity = 1;
-                    universalOverlay.style.pointerEvents = 'auto';
-                 } else {
-                    universalOverlay.style.opacity = 0;
-                    universalOverlay.style.pointerEvents = 'none';
-                 }
+            // Function to set opacity and pointer events
+            const setOverlayVisibility = (element, visible) => {
+                element.style.opacity = visible ? 1 : 0;
+                element.style.pointerEvents = visible ? 'auto' : 'none';
+            };
+
+            setOverlayVisibility(functionalOverlay, currentSection === 'functional');
+            setOverlayVisibility(universalCardOverlay, currentSection === 'universal');
+            setOverlayVisibility(maintenanceAccessOverlay, currentSection === 'specs');
+            setOverlayVisibility(maintenanceRestartOverlay, currentSection === 'specs');
+            
+            // NEW: Hero Fade-Out Logic
+            const scrollDistance = window.scrollY;
+            const fadeEnd = window.innerHeight * 0.75; // Fade out by 75% of the first viewport
+            
+            let opacity = 1;
+            if (scrollDistance > 0) {
+                opacity = 1 - (scrollDistance / fadeEnd);
+                opacity = Math.max(0, opacity); // Clamp between 0 and 1
+            }
+            
+            if (heroContent) {
+                heroContent.style.opacity = opacity;
+                heroContent.style.transform = `translateY(${scrollDistance * 0.5}px)`; // Add slight parallax lift
             }
 
-
-            // Maintenance Overlay is controlled by the currentSection match
-            if (maintenanceOverlay) {
-                if (currentSection === 'specs') {
-                    maintenanceOverlay.style.opacity = 1;
-                    maintenanceOverlay.style.pointerEvents = 'auto';
-                } else {
-                    maintenanceOverlay.style.opacity = 0;
-                    maintenanceOverlay.style.pointerEvents = 'none';
-                }
-            }
         }
         window.addEventListener('scroll', updateScroll);
+        // Call once on load to initialize visibility
+        updateScroll(); 
+
 
         function animate() {
             requestAnimationFrame(animate);
@@ -1024,6 +1122,7 @@
             camera.updateProjectionMatrix();
             renderer.setSize(window.innerWidth, window.innerHeight);
             if (composer) composer.setSize(window.innerWidth, window.innerHeight);
+            updateScroll(); // Recalculate hero fade zone on resize
         });
 
         // The initial overlay handles the start click now
@@ -1042,7 +1141,6 @@
                 loader.style.opacity = 0;
                 setTimeout(() => {
                     loader.style.display = 'none';
-                    // The overlay is handled by CSS initially, no need for fade-in logic here
                 }, 500);
             }
             // Capture the icon element after the DOM is fully loaded
@@ -1052,13 +1150,10 @@
             animate();
         };
 
-        // --- NEW: OVERLAY BUTTON LOGIC ---
+        // --- OVERLAY BUTTON LOGIC ---
 
-        document.getElementById('btn-restart-overlay')?.addEventListener('click', () => {
-             showMessage("System Restarting...", 3000);
-             // Short delay for visual feedback before reloading
-             setTimeout(() => location.reload(), 1000); 
-        });
+        // Restart button now triggers modal
+        document.getElementById('btn-restart-overlay')?.addEventListener('click', showConfirmModal);
 
         // The new overlay play/pause button uses the same logic as the 3D dial
         document.getElementById('btn-play-pause-overlay')?.addEventListener('click', toggleAudioPlayback);
