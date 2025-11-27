@@ -345,7 +345,8 @@
 
         // 2. LEFT DIAL (With Quadrant Detail)
         const dialGroup = new THREE.Group();
-        dialGroup.position.set(-1.45, 0, Z_SURFACE);
+        // Position is -1.55
+        dialGroup.position.set(-1.55, 0, Z_SURFACE);
 
         // A. Outer Dish (Black)
         const DIAL_SIZE = 1.8;
@@ -362,7 +363,8 @@
         slope.position.z = 0.0;
         dialGroup.add(slope);
 
-        // C. Quadrant Markers (The "Cross" lines)
+        // C. Quadrant Markers (The "Cross" lines) - Removed
+        /*
         const markerGeo = new THREE.BoxGeometry(0.04, DIAL_SIZE/2 - DIAL_SIZE/3.2, 0.05);
         for(let i=0; i<4; i++) {
             const m = new THREE.Mesh(markerGeo, matBlack);
@@ -372,6 +374,7 @@
             m.rotation.z = angle;
             dialGroup.add(m);
         }
+        */
 
         // D. Teal Center Button (Clickable)
         const btnGeo = new THREE.CylinderGeometry(DIAL_SIZE/3.3, DIAL_SIZE/3.3, 0.1, 64);
@@ -385,42 +388,60 @@
         deviceGroup.add(dialGroup);
 
         // 3. CENTER SPEAKER ARRAY
-        const SPK_W = 1.1;
-        const SPK_H = 1.5;
+        // Grille dimensions to visually fit the 1:2 aspect ratio
+        const SPK_W = 1.0; 
+        const SPK_H = 1.8;
         
         // Texture Generation
         const cvs = document.createElement('canvas');
-        cvs.width = 512; cvs.height = 512;
+        // Canvas dimensions matching desired visual aspect ratio for better texture mapping
+        cvs.width = 256; 
+        cvs.height = 512; // Double the height for 1:2 ratio
         const ctx = cvs.getContext('2d');
-        ctx.fillStyle = '#FFB800'; 
-        ctx.fillRect(0,0,512,512);
-        ctx.fillStyle = '#221100'; // Dark recessed color
-        const gridX = 14;
-        const gridY = 18;
-        const pad = 30;
-        const stepX = (512 - pad*2) / gridX;
-        const stepY = (512 - pad*2) / gridY;
+        ctx.fillStyle = '#FFB800'; // Chassis Yellow background
+        ctx.fillRect(0,0,cvs.width,cvs.height);
+        
+        // Draw dark holes
+        ctx.fillStyle = '#000000'; // Pure black for the holes
+        
+        // Grid configuration for staggered circular pattern
+        const gridX = 8; // Number of columns, adjusted for new canvas size
+        const gridY = 18; // Number of rows, adjusted for new canvas size
+        const radius = 6; // Size of the dot
+        const padX = 20; // Padding from the edge of the canvas width
+        const padY = 20; // Padding from the edge of the canvas height
+        const stepX = (cvs.width - padX*2) / gridX;
+        const stepY = (cvs.height - padY*2) / gridY;
 
         for(let y=0; y<=gridY; y++) {
+            // Implement staggering: offset every other row by half the horizontal step
+            const xOffset = (y % 2 === 0) ? 0 : stepX / 2; 
+
             for(let x=0; x<=gridX; x++) {
                 ctx.beginPath();
-                ctx.arc(pad + x*stepX, pad + y*stepY, 8, 0, Math.PI*2);
+                ctx.arc(padX + x*stepX + xOffset, padY + y*stepY, radius, 0, Math.PI*2);
                 ctx.fill();
             }
         }
+
         const spkTex = new THREE.CanvasTexture(cvs);
+        // Ensure texture wrapping is set to repeat for tiling if necessary (though centered plane is better)
+        spkTex.wrapS = spkTex.wrapT = THREE.ClampToEdgeWrapping; 
+        
         const matSpk = new THREE.MeshPhysicalMaterial({
             map: spkTex,
-            color: 0xFFB800,
+            color: 0xFFB800, // This color determines the overall tint/color of the plane
             roughness: 0.4
         });
         const spkPlane = new THREE.Mesh(new THREE.PlaneGeometry(SPK_W, SPK_H), matSpk);
-        spkPlane.position.set(0.1, 0, Z_SURFACE + 0.01);
+        // Position is -0.05
+        spkPlane.position.set(-0.05, 0, Z_SURFACE + 0.01); 
         deviceGroup.add(spkPlane);
 
         // 4. RIGHT BUTTON CLUSTER
         const padGroup = new THREE.Group();
-        padGroup.position.set(1.65, 0, Z_SURFACE);
+        // Position changed from 1.5 to 1.55
+        padGroup.position.set(1.55, 0, Z_SURFACE); 
 
         // A. Housing (Rounded Rect)
         const HS_SIZE = 1.8; 
