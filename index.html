@@ -6,6 +6,21 @@
     <title>SoundScape Brantford</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    
+    <!-- POST-PROCESSING SCRIPTS for Bloom/Glow Effect (Essential for premium look) -->
+    <!-- Essential Libraries: Composer, RenderPass, ShaderPass -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/examples/js/postprocessing/EffectComposer.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/examples/js/postprocessing/RenderPass.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/examples/js/postprocessing/ShaderPass.js"></script>
+    
+    <!-- Shaders must be loaded before the Passes that use them -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/examples/js/shaders/CopyShader.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/examples/js/shaders/LuminosityShader.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/examples/js/postprocessing/LuminosityHighPassShader.js"></script>
+    
+    <!-- The main bloom pass -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/examples/js/postprocessing/UnrealBloomPass.js"></script>
+    
     <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
     <style>
@@ -217,6 +232,34 @@
         renderer.outputEncoding = THREE.sRGBEncoding;
         container.appendChild(renderer.domElement);
         
+        // --- POST-PROCESSING SETUP (REQUIRED FOR SHINE/GLOW EFFECT) ---
+        let composer;
+        let bloomPass;
+        
+        function initPostProcessing() {
+            // Check if dependencies loaded successfully (to prevent errors in case of CDN failure)
+            if (typeof THREE.EffectComposer === 'undefined') {
+                return;
+            }
+            
+            composer = new THREE.EffectComposer(renderer);
+            composer.addPass(new THREE.RenderPass(scene, camera));
+
+            // Adjust parameters for a dramatic, high-contrast glow
+            bloomPass = new THREE.UnrealBloomPass(
+                new THREE.Vector2(window.innerWidth, window.innerHeight),
+                1.5, // Strength: Increased bloom strength
+                0.3, // Radius
+                0.8  // Threshold
+            );
+            composer.addPass(bloomPass);
+            
+            // Set initial size
+            composer.setSize(window.innerWidth, window.innerHeight);
+        }
+        initPostProcessing();
+
+
         // --- INTERACTIVITY SETUP ---
         let raycaster, mouse;
         let clickableObjects = []; // Array to store meshes that can be clicked
@@ -226,12 +269,12 @@
         mouse = new THREE.Vector2();
 
 
-        // --- LIGHTING (Studio High Contrast) ---
-        const ambientLight = new THREE.AmbientLight(0xffffff, 0.5); 
+        // --- LIGHTING (Adjusted for Bloom) ---
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.15); // Reduced ambient light for more drama
         scene.add(ambientLight);
 
         // Main Key Light
-        const mainLight = new THREE.DirectionalLight(0xffffff, 1.0);
+        const mainLight = new THREE.DirectionalLight(0xffffff, 1.5); // Increased main light intensity
         mainLight.position.set(5, 5, 10);
         mainLight.castShadow = true;
         mainLight.shadow.bias = -0.0001;
@@ -240,13 +283,13 @@
         scene.add(mainLight);
 
         // Rim Light (Top)
-        const topLight = new THREE.SpotLight(0xffffff, 2.0);
+        const topLight = new THREE.SpotLight(0xffffff, 3.0); // Increased rim light intensity
         topLight.position.set(0, 10, 0);
         topLight.lookAt(0,0,0);
         scene.add(topLight);
 
         // Fill Light (Warmth for the yellow)
-        const fillLight = new THREE.PointLight(0xffaa00, 0.3);
+        const fillLight = new THREE.PointLight(0xffaa00, 0.4);
         fillLight.position.set(-5, 0, 5);
         scene.add(fillLight);
 
@@ -262,9 +305,23 @@
             clearcoatRoughness: 0.1
         });
 
-        // 2. MATTE BLACK
+        // 2. MATTE BLACK (For Housing/Buttons)
         const matBlack = new THREE.MeshStandardMaterial({
             color: 0x111111,
+            roughness: 0.8,
+            metalness: 0.1
+        });
+        
+        // 10. DARK DIAL/RIM (Slightly lighter than pure black to prevent 'disappearing' on restoration)
+        const matDialDark = new THREE.MeshStandardMaterial({
+            color: 0x444444, 
+            roughness: 0.7,
+            metalness: 0.2
+        });
+        
+        // 9. VIBRANT BLUE PRESS COLOR (Temporary color for clear feedback on rim)
+        const matBluePress = new THREE.MeshStandardMaterial({
+            color: 0x00A0FF, 
             roughness: 0.8,
             metalness: 0.1
         });
@@ -276,40 +333,44 @@
             roughness: 0.3,
             metalness: 0.0,
             emissive: colorGreen, // Added emissive for lit effect
-            emissiveIntensity: 0.6 // Increased intensity for glow
+            emissiveIntensity: 3.0 // Increased intensity to glow under bloom
         });
         
         // 4. ALTERNATE DIAL COLOR (Red/Pink) - Unused, but kept definition clean
-        const colorRed = 0xFF0055;
+        const colorRedDial = 0xFF0055;
         const matRedDial = new THREE.MeshPhysicalMaterial({
-            color: colorRed,
+            color: colorRedDial,
             roughness: 0.3,
             metalness: 0.0,
-            emissive: colorRed,
+            emissive: colorRedDial,
             emissiveIntensity: 0.1
         });
 
         // 5. BRUSHED STEEL (MODIFIED: Darker Grey)
         const matSteel = new THREE.MeshStandardMaterial({
-            color: 0x888888, // Changed from 0x9E9E9E to darker grey
+            color: 0x888888, // Darker grey
             roughness: 0.35,
             metalness: 0.9,
         });
         
-        // 6. RED INDICATOR LED (ON state)
-        const matRedLED = new THREE.MeshBasicMaterial({
-            color: 0xFF0000,
-            // Use Emissive to make it glow slightly, matching the teal dial
+        // 6. RED INDICATOR LED (ON state) - PURE RED, HIGH SHINE
+        const matRedLED = new THREE.MeshStandardMaterial({
+            color: 0xFF0000, 
+            roughness: 0.1,
+            metalness: 0.0,
             emissive: 0xFF0000, 
-            emissiveIntensity: 0.5
+            emissiveIntensity: 8.0 // Very high intensity for a strong pure red glow
         });
 
-        // 8. BLACK INDICATOR LED (OFF state - new default for the dot)
-        const matBlackDot = new THREE.MeshBasicMaterial({
-            color: 0x000000,
+        // 8. BLACK INDICATOR LED (OFF state) - STANDARD MATERIAL FOR SHADOWS/DARKNESS
+        const matBlackDot = new THREE.MeshStandardMaterial({
+            color: 0x010101, // Near black for deep dark appearance
+            roughness: 0.9,
+            metalness: 0.1,
+            emissive: 0x000000 // Ensure it doesn't emit any light
         });
         
-        // 7. BUTTON PRESS COLOR (Temporary)
+        // 7. BUTTON PRESS COLOR (Temporary) - Retained for black buttons
         const matGrayPress = new THREE.MeshStandardMaterial({
             color: 0xaaaaaa,
             roughness: 0.8,
@@ -339,6 +400,7 @@
         const chassisWidth = 5.75;
         const chassisDepth = 0.6;
         const chassisRadius = 0.55; 
+        const CHASSIS_HALF_Y = chassisHeight / 2; // 1.1
 
         const chassisShape = createRoundedRect(chassisWidth, chassisHeight, chassisRadius);
         const chassisGeo = new THREE.ExtrudeGeometry(chassisShape, {
@@ -359,41 +421,37 @@
         // Position is -1.75
         dialGroup.position.set(-1.75, 0, Z_SURFACE);
 
-        // A. Outer Dish (Black)
+        // NEW GROUP FOR THE RIM - THIS IS THE CLICKABLE, MOVING PART
+        const rimGroup = new THREE.Group();
+        rimGroup.name = 'DIAL_RIM'; // Name the group for interaction
+        rimGroup.userData.originalMat = matDialDark; 
+        dialGroup.add(rimGroup);
+        clickableObjects.push(rimGroup); // Make the entire group clickable!
+
         const DIAL_SIZE = 1.8;
+
+        // A. Outer Dish (Black) - CHILD OF rimGroup
         const dishGeo = new THREE.CylinderGeometry(DIAL_SIZE/2, DIAL_SIZE/2 + 0.1, 0.15, 64);
-        const dish = new THREE.Mesh(dishGeo, matBlack);
+        const dish = new THREE.Mesh(dishGeo, matDialDark); 
         dish.rotation.x = Math.PI/2;
-        dish.position.z = -0.05;
-        dialGroup.add(dish);
+        dish.position.z = -0.05; // Position relative to rimGroup (its parent)
+        rimGroup.add(dish); // Add to new rimGroup
 
-        // B. Inner Concave Slope
+        // B. Inner Concave Slope - CHILD OF rimGroup
         const slopeGeo = new THREE.CylinderGeometry(DIAL_SIZE/3.2, DIAL_SIZE/2, 0.2, 64, 1, true);
-        const slope = new THREE.Mesh(slopeGeo, matBlack);
+        const slope = new THREE.Mesh(slopeGeo, matDialDark); 
         slope.rotation.x = Math.PI/2;
-        slope.position.z = 0.0;
-        dialGroup.add(slope);
+        slope.position.z = 0.0; // Position relative to rimGroup (its parent)
+        rimGroup.add(slope); // Add to new rimGroup
 
-        // C. Quadrant Markers (The "Cross" lines) - Removed
-        /*
-        const markerGeo = new THREE.BoxGeometry(0.04, DIAL_SIZE/2 - DIAL_SIZE/3.2, 0.05);
-        for(let i=0; i<4; i++) {
-            const m = new THREE.Mesh(markerGeo, matBlack);
-            const angle = (i * 90) * (Math.PI/180);
-            const radius = (DIAL_SIZE/2 + DIAL_SIZE/3.2) / 2;
-            m.position.set(Math.cos(angle)*radius, Math.sin(angle)*radius, 0.05);
-            m.rotation.z = angle;
-            dialGroup.add(m);
-        }
-        */
-
-        // D. Teal Center Button (Clickable)
+        // D. Teal Center Button (Clickable) - SIBLING TO rimGroup
         const btnGeo = new THREE.CylinderGeometry(DIAL_SIZE/3.3, DIAL_SIZE/3.3, 0.1, 64);
         const btn = new THREE.Mesh(btnGeo, matCyan);
         btn.rotation.x = Math.PI/2;
         btn.position.z = 0.02;
         btn.name = 'DIAL_CENTER'; // Add name for raycasting
-        dialGroup.add(btn);
+        btn.userData.originalMat = matCyan;
+        dialGroup.add(btn); 
         clickableObjects.push(btn); // Add to clickable list
 
         deviceGroup.add(dialGroup);
@@ -540,6 +598,42 @@
         });
 
         deviceGroup.add(padGroup);
+        
+        // --- BOTTOM FACE BUTTON (as previously implemented) ---
+        const bottomBtnWidth = 1.0; 
+        const bottomBtnHeight = 0.2; // Slim height
+        const bottomBtnDepth = 0.02; // Thickness
+        const bottomBtnRadius = 0.08; 
+        const bottomOffset = 0.1; 
+
+        const bottomBtnShape = createRoundedRect(bottomBtnWidth, bottomBtnHeight, bottomBtnRadius);
+        const bottomBtnGeo = new THREE.ExtrudeGeometry(bottomBtnShape, {
+            depth: bottomBtnDepth,
+            bevelEnabled: true,
+            bevelSize: 0.03,
+            bevelThickness: 0.03
+        });
+        bottomBtnGeo.center();
+
+        const bottomButton = new THREE.Mesh(bottomBtnGeo, matBlack);
+        
+        // Chassis center is (0, 0, 0). Bottom face is at Y = -1.1.
+        // We need to rotate the button -90 degrees around X to lay it flat on the bottom face.
+        bottomButton.rotation.x = THREE.MathUtils.degToRad(-90); 
+        
+        // Position:
+        const CHASSIS_HALF_Z = chassisDepth / 2;
+        
+        bottomButton.position.set(
+            0, // X: Centered
+            -CHASSIS_HALF_Y, // Y: Place at the bottom face (Y=-1.1)
+            CHASSIS_HALF_Z - bottomOffset // Z: Position near the back edge
+        );
+
+        bottomButton.name = 'BOTTOM_FACE_BUTTON';
+        bottomButton.userData.originalMat = matBlack;
+        chassis.add(bottomButton); // Attach to chassis
+        clickableObjects.push(bottomButton); // Add to clickable list
 
         scene.add(deviceGroup);
 
@@ -552,38 +646,88 @@
             // Update the picking ray with the camera and mouse position
             raycaster.setFromCamera(mouse, camera);
 
-            // Calculate objects intersecting the picking ray
-            const intersects = raycaster.intersectObjects(clickableObjects, false);
+            // Set recursive to true so raycaster checks children of groups (rimGroup)
+            const intersects = raycaster.intersectObjects(clickableObjects, true);
 
             if (intersects.length > 0) {
-                const intersected = intersects[0].object;
+                // Get the mesh that was hit
+                const hitMesh = intersects[0].object;
                 
+                // Determine the interactive element (mesh or group parent)
+                let interactiveElement = hitMesh;
+
+                // If the hit mesh is a child of the rimGroup, the element we interact with is the group itself
+                if (hitMesh.parent && hitMesh.parent.name === 'DIAL_RIM') {
+                    interactiveElement = hitMesh.parent;
+                }
+
                 // Visual Feedback: Button Press Animation
-                const originalZ = intersected.position.z;
-                const originalScale = intersected.scale.clone();
-                // Since the dot is a child of the button, it moves along with the button's position.
-                intersected.position.z -= 0.01; // Press in slightly
-                intersected.scale.set(0.98, 0.98, 0.98); // Shrink slightly
+                const originalZ = interactiveElement.position.z;
+                const originalY = interactiveElement.position.y; 
+                const originalScale = interactiveElement.scale.clone();
+                
+                // --- STANDARD BUTTON LOGIC START ---
+                let pressDistance = 0.01; // STANDARD BUTTON DISTANCE (Used for all buttons now)
+                let momentaryMaterial = matGrayPress; // STANDARD BUTTON PRESS COLOR (Used for all buttons now)
+                // --- STANDARD BUTTON LOGIC END ---
+                
+                // If the interactive element is the rim group, apply standard parameters
+                if (interactiveElement.name === 'DIAL_RIM') {
+                    
+                    // The rim group's children (dish/slope) need to switch materials individually
+                    interactiveElement.children.forEach(child => {
+                        child.material = momentaryMaterial; // Uses matGrayPress
+                    });
+                }
+                
+                // Apply visual changes
+                if (interactiveElement.name === 'BOTTOM_FACE_BUTTON') {
+                    // This button is rotated, so press along local Z (world -Y)
+                    interactiveElement.position.y -= pressDistance; 
+                } else if (interactiveElement.name === 'DIAL_RIM' || interactiveElement.name === 'DIAL_CENTER' || interactiveElement.name.startsWith('BUTTON')) {
+                    // Front-facing elements press along World Z
+                    interactiveElement.position.z -= pressDistance; 
+                }
+
+                interactiveElement.scale.set(0.98, 0.98, 0.98); // Shrink slightly
+                
+                // Only apply temporary material if it's not the Rim Group (handled above) 
+                // and not the Dial Center (which uses emissive).
+                if (interactiveElement.name !== 'DIAL_RIM' && interactiveElement.name !== 'DIAL_CENTER') {
+                     interactiveElement.material = momentaryMaterial;
+                }
+                // Dial Center uses emissive color, so no temporary material needed.
 
                 setTimeout(() => {
                     // Release animation
-                    intersected.position.z = originalZ;
-                    intersected.scale.copy(originalScale);
-                    // Also reset temporary press color
-                    if (intersected.name.startsWith('BUTTON') || intersected.name === 'ACTION_BUTTON') {
-                        intersected.material = intersected.userData.originalMat;
+                    if (interactiveElement.name === 'BOTTOM_FACE_BUTTON') {
+                        // Restore Y position for the bottom button
+                        interactiveElement.position.y = originalY; 
+                    } else {
+                        // Restore Z position for front-facing elements
+                        interactiveElement.position.z = originalZ;
+                    }
+                    interactiveElement.scale.copy(originalScale);
+                    
+                    // Restore original material
+                    if (interactiveElement.name === 'DIAL_RIM') {
+                        interactiveElement.children.forEach(child => {
+                            // Restore to the custom matDialDark material
+                            child.material = interactiveElement.userData.originalMat;
+                        });
+                    } else if (interactiveElement.name !== 'DIAL_CENTER') {
+                        interactiveElement.material = interactiveElement.userData.originalMat || matBlack;
                     }
                 }, 150);
 
-                console.log('Button clicked:', intersected.name);
+                console.log('Button clicked:', interactiveElement.name);
 
                 // --- DEMONSTRATE FUNCTIONALITY ---
-                if (intersected.name === 'DIAL_CENTER') {
-                    // Center Dial is now permanently green lit and should not toggle color.
+                if (interactiveElement.name === 'DIAL_RIM') {
+                    console.log('Dial Rim: Click acknowledged - Unified movement success.');
+                } else if (interactiveElement.name === 'DIAL_CENTER') {
                     console.log('Dial Center: Click acknowledged. Color remains green.');
-                } else if (intersected.name === 'ACTION_BUTTON') {
-                    // ACTION BUTTON: Simple visual feedback (same as black buttons)
-                    intersected.material = matGrayPress;
+                } else if (interactiveElement.name === 'ACTION_BUTTON') {
                     
                     if (redDotLED) {
                         // Toggle LED between red (ON) and black (OFF)
@@ -596,9 +740,10 @@
                         }
                     }
                     console.log('Action Button: Simple press acknowledged.');
-                } else if (intersected.name.startsWith('BUTTON')) {
-                    // Simple visual feedback for black buttons
-                    intersected.material = matGrayPress;
+                } else if (interactiveElement.name === 'BOTTOM_FACE_BUTTON') {
+                    console.log('Bottom Face Button: Click acknowledged (Power/Reset function).');
+                } else if (interactiveElement.name.startsWith('BUTTON')) {
+                    console.log('Standard Button: Click acknowledged.');
                 }
             }
         }
@@ -670,7 +815,12 @@
             const time = Date.now() * 0.001;
             deviceGroup.position.y = Math.sin(time) * 0.05;
 
-            renderer.render(scene, camera);
+            // Use composer if available, otherwise use default renderer
+            if (composer) {
+                composer.render();
+            } else {
+                renderer.render(scene, camera);
+            }
         }
 
         // --- RESIZE HANDLER ---
@@ -678,6 +828,9 @@
             camera.aspect = window.innerWidth / window.innerHeight;
             camera.updateProjectionMatrix();
             renderer.setSize(window.innerWidth, window.innerHeight);
+            if (composer) {
+                 composer.setSize(window.innerWidth, window.innerHeight); // Update composer size
+            }
         });
 
         // --- INIT ---
@@ -691,6 +844,12 @@
             }
             animate();
         };
+
+        if (document.readyState === 'complete' || document.readyState === 'interactive') {
+             initPostProcessing();
+        } else {
+             window.addEventListener('DOMContentLoaded', initPostProcessing);
+        }
 
     })(); // End IIFE
     </script>
