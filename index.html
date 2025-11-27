@@ -136,7 +136,7 @@
                 Click the buttons or the center dial to test the embedded functions and interactions.
             </p>
         </div>
-        <div class="scroll-indicator text-zinc-600 text-[10px] tracking-[0.2em] uppercase">Scroll to Interact</div>
+        <div class="scroll-indicator text-zinc-600 text-[0.2em] uppercase">Scroll to Interact</div>
     </section>
 
     <!-- Section 2: Interface -->
@@ -176,7 +176,9 @@
             </div>
             <div class="spec-item">
                 <h3 class="text-zinc-500 text-[10px] uppercase tracking-widest mb-2">Dimensions</h3>
-                <div class="text-white font-medium">120mm x 52mm</div>
+                <!-- NOTE: The physical dimensions displayed here (120mm x 52mm) 
+                     are placeholders and do not reflect the current Three.js unit size (5.75 x 2.2). -->
+                <div class="text-white font-medium">120mm x 52mm</div> 
             </div>
             <div class="spec-item">
                 <h3 class="text-zinc-500 text-[10px] uppercase tracking-widest mb-2">Material</h3>
@@ -218,6 +220,7 @@
         // --- INTERACTIVITY SETUP ---
         let raycaster, mouse;
         let clickableObjects = []; // Array to store meshes that can be clicked
+        let redDotLED = null; // Global reference for the red dot mesh
 
         raycaster = new THREE.Raycaster();
         mouse = new THREE.Vector2();
@@ -286,16 +289,24 @@
             emissiveIntensity: 0.1
         });
 
-        // 5. BRUSHED STEEL
+        // 5. BRUSHED STEEL (MODIFIED: Darker Grey)
         const matSteel = new THREE.MeshStandardMaterial({
-            color: 0xE0E0E0,
+            color: 0x9E9E9E, // Changed from 0xE0E0E0 to darker grey
             roughness: 0.35,
             metalness: 0.9,
         });
         
-        // 6. RED INDICATOR LED
+        // 6. RED INDICATOR LED (ON state)
         const matRedLED = new THREE.MeshBasicMaterial({
             color: 0xFF0000,
+            // Use Emissive to make it glow slightly, matching the teal dial
+            emissive: 0xFF0000, 
+            emissiveIntensity: 0.5
+        });
+
+        // 8. BLACK INDICATOR LED (OFF state - new default for the dot)
+        const matBlackDot = new THREE.MeshBasicMaterial({
+            color: 0x000000,
         });
         
         // 7. BUTTON PRESS COLOR (Temporary)
@@ -325,7 +336,7 @@
 
         // 1. CHASSIS
         const chassisHeight = 2.2;
-        const chassisWidth = 5.3;
+        const chassisWidth = 5.75;
         const chassisDepth = 0.6;
         const chassisRadius = 0.55; 
 
@@ -345,8 +356,8 @@
 
         // 2. LEFT DIAL (With Quadrant Detail)
         const dialGroup = new THREE.Group();
-        // Position is -1.55
-        dialGroup.position.set(-1.55, 0, Z_SURFACE);
+        // Position is -1.75
+        dialGroup.position.set(-1.75, 0, Z_SURFACE);
 
         // A. Outer Dish (Black)
         const DIAL_SIZE = 1.8;
@@ -398,28 +409,39 @@
         cvs.width = 256; 
         cvs.height = 512; // Double the height for 1:2 ratio
         const ctx = cvs.getContext('2d');
-        ctx.fillStyle = '#FFB800'; // Chassis Yellow background
-        ctx.fillRect(0,0,cvs.width,cvs.height);
+        // The background is left transparent to show the yellow chassis below
         
         // Draw dark holes
         ctx.fillStyle = '#000000'; // Pure black for the holes
         
-        // Grid configuration for staggered circular pattern
-        const gridX = 8; // Number of columns, adjusted for new canvas size
-        const gridY = 18; // Number of rows, adjusted for new canvas size
-        const radius = 6; // Size of the dot
-        const padX = 20; // Padding from the edge of the canvas width
-        const padY = 20; // Padding from the edge of the canvas height
-        const stepX = (cvs.width - padX*2) / gridX;
-        const stepY = (cvs.height - padY*2) / gridY;
+        // Grid configuration for staggered circular pattern (9 then 10)
+        const gridY = 20; // 21 rows total (0 to 20)
+        const radius = 7; 
+        const padX = 10; // REDUCED PADDING for density
+        const padY = 10; // REDUCED PADDING for density
+        const stepY = (cvs.height - padY*2) / gridY; // Vertical step remains constant
+
+        const drawableWidth = cvs.width - padX * 2;
+        
+        // Base horizontal spacing determined by the row with more dots (10 dots = 9 intervals)
+        const baseStepX = drawableWidth / (10 - 1); // 10 dots is the widest row
 
         for(let y=0; y<=gridY; y++) {
-            // Implement staggering: offset every other row by half the horizontal step
-            const xOffset = (y % 2 === 0) ? 0 : stepX / 2; 
+            // Rows 0, 2, 4, ... 20 have 9 dots (8 intervals)
+            // Rows 1, 3, 5, ... 19 have 10 dots (9 intervals)
+            const numDots = (y % 2 === 0) ? 9 : 10; 
+            
+            // Calculate the total width spanned by the dots in this row (based on consistent spacing)
+            const rowWidth = baseStepX * (numDots - 1);
+            
+            // Calculate the horizontal offset needed to center the row.
+            const centeringOffset = (drawableWidth - rowWidth) / 2;
 
-            for(let x=0; x<=gridX; x++) {
+            for(let x=0; x<numDots; x++) {
+                const dotX = padX + centeringOffset + x * baseStepX;
+                
                 ctx.beginPath();
-                ctx.arc(padX + x*stepX + xOffset, padY + y*stepY, radius, 0, Math.PI*2);
+                ctx.arc(dotX, padY + y*stepY, radius, 0, Math.PI*2);
                 ctx.fill();
             }
         }
@@ -430,63 +452,88 @@
         
         const matSpk = new THREE.MeshPhysicalMaterial({
             map: spkTex,
-            color: 0xFFB800, // This color determines the overall tint/color of the plane
-            roughness: 0.4
+            color: 0x000000, // Color of the material is technically black, but only where the texture is drawn.
+            roughness: 0.4,
+            transparent: true, // IMPORTANT: Enable transparency
+            alphaTest: 0.1 // IMPORTANT: Cut out transparent parts
         });
         const spkPlane = new THREE.Mesh(new THREE.PlaneGeometry(SPK_W, SPK_H), matSpk);
-        // Position is -0.05
-        spkPlane.position.set(-0.05, 0, Z_SURFACE + 0.01); 
+        // Position is -0.1
+        spkPlane.position.set(-0.21, 0, Z_SURFACE + 0.01); 
         deviceGroup.add(spkPlane);
 
         // 4. RIGHT BUTTON CLUSTER
         const padGroup = new THREE.Group();
-        // Position changed from 1.5 to 1.55
+        // Position is 1.55
         padGroup.position.set(1.55, 0, Z_SURFACE); 
 
         // A. Housing (Rounded Rect)
-        const HS_SIZE = 1.8; 
-        const hsShape = createRoundedRect(HS_SIZE, HS_SIZE, 0.25);
-        const hsGeo = new THREE.ExtrudeGeometry(hsShape, { depth: 0.1, bevelEnabled: false});
+        const HS_H = 1.74; // Housing Height is fixed
+        const HS_W = 2.24; // Housing Width is fixed
+        
+        const hsShape = createRoundedRect(HS_W, HS_H, 0.25);
+        const hsGeo = new THREE.ExtrudeGeometry(hsShape, { depth: 0.05, bevelEnabled: false}); // Housing depth 0.05
         hsGeo.center();
         const hs = new THREE.Mesh(hsGeo, matBlack);
         hs.position.z = 0.02;
         padGroup.add(hs);
 
         // B. Buttons (4x Grid)
-        const gap = 0.08;
-        const btnDim = (HS_SIZE - (gap*3)) / 2;
+        // Note: The 'gap' variable is retained for the bevel logic, but gaps are dynamically calculated
+        // based on the fixed housing size and new button dimensions.
+        const gap = 0.08; 
         
-        // Button Shape
-        const btnShape = createRoundedRect(btnDim, btnDim, 0.12);
+        // Button dimensions: W = 0.88, H = 0.66
+        const btnDimW = 0.88; 
+        const btnDimH = 0.66; 
+        
+        // New Gaps based on fixed housing (HS_W=2.24, HS_H=1.74)
+        const gapX = (HS_W - 2 * btnDimW) / 3; // 0.16
+        const gapY = (HS_H - 2 * btnDimH) / 3; // 0.14
+
+        // Button Shape using new dimensions
+        const btnShape = createRoundedRect(btnDimW, btnDimH, 0.12);
         const btnGeom = new THREE.ExtrudeGeometry(btnShape, {
-            depth: 0.15,
+            depth: 0.02, // CONFIRMED: depth 0.02
             bevelEnabled: true,
             bevelSize: 0.03,
             bevelThickness: 0.03
         });
         btnGeom.center();
 
+        // Calculate positions based on new gaps and dimensions
+        // X position for right buttons: (btnDimW/2) + (gapX/2)
+        // X position for left buttons: -(btnDimW/2) - (gapX/2)
+        const X_OFFSET = (btnDimW / 2) + (gapX / 2);
+        const Y_OFFSET = (btnDimH / 2) + (gapY / 2);
+
+        // New Z position for the buttons (slight raise above the Z=0.02 housing pad)
+        const BUTTON_Z_POS = 0.04; // CONFIRMED: 0.04
+
         const positions = [
-            { x: -btnDim/2 - gap/2, y: btnDim/2 + gap/2, mat: matBlack, name: 'BUTTON_TL', originalMat: matBlack }, // TL
-            { x: btnDim/2 + gap/2, y: btnDim/2 + gap/2, mat: matBlack, name: 'BUTTON_TR', originalMat: matBlack },  // TR
-            { x: -btnDim/2 - gap/2, y: -btnDim/2 - gap/2, mat: matBlack, name: 'BUTTON_BL', originalMat: matBlack },// BL
-            { x: btnDim/2 + gap/2, y: -btnDim/2 - gap/2, mat: matSteel, name: 'ACTION_BUTTON', originalMat: matSteel }  // BR (Steel)
+            { x: -X_OFFSET, y: Y_OFFSET, mat: matBlack, name: 'BUTTON_TL', originalMat: matBlack }, // TL
+            { x: X_OFFSET, y: Y_OFFSET, mat: matBlack, name: 'BUTTON_TR', originalMat: matBlack },  // TR
+            { x: -X_OFFSET, y: -Y_OFFSET, mat: matBlack, name: 'BUTTON_BL', originalMat: matBlack },// BL
+            { x: X_OFFSET, y: -Y_OFFSET, mat: matSteel, name: 'ACTION_BUTTON', originalMat: matSteel }  // BR (Steel)
         ];
 
         positions.forEach((p) => {
             const b = new THREE.Mesh(btnGeom, p.mat);
-            b.position.set(p.x, p.y, 0.08);
+            b.position.set(p.x, p.y, BUTTON_Z_POS); // Z position
             b.name = p.name;
             b.userData.originalMat = p.originalMat; // Store original material reference
             
             // Add Red Dot to last button (BR)
             if(p.name === 'ACTION_BUTTON') {
                 const dGeo = new THREE.CircleGeometry(0.04, 16);
-                const dMat = matRedLED;
+                const dMat = matBlackDot; // MODIFIED: Start as black (off)
                 const dot = new THREE.Mesh(dGeo, dMat);
+                
                 // Position in top-right corner of the button
-                dot.position.set(btnDim/3, -btnDim/3, 0.08); 
+                // Z position for the dot
+                dot.position.set(btnDimW/3, -btnDimH/3, BUTTON_Z_POS); 
                 b.add(dot);
+                redDotLED = dot; // Store global reference
             }
             padGroup.add(b);
             clickableObjects.push(b); // Add to clickable list
@@ -514,7 +561,8 @@
                 // Visual Feedback: Button Press Animation
                 const originalZ = intersected.position.z;
                 const originalScale = intersected.scale.clone();
-                intersected.position.z -= 0.02; // Press in slightly
+                // Since the dot is a child of the button, it moves along with the button's position.
+                intersected.position.z -= 0.01; // Press in slightly
                 intersected.scale.set(0.98, 0.98, 0.98); // Shrink slightly
 
                 setTimeout(() => {
@@ -546,6 +594,17 @@
                 } else if (intersected.name === 'ACTION_BUTTON') {
                     // ACTION BUTTON: Simple visual feedback (same as black buttons)
                     intersected.material = matGrayPress;
+                    
+                    if (redDotLED) {
+                        // Toggle LED between red (ON) and black (OFF)
+                        if (redDotLED.material.color.getHex() === matBlackDot.color.getHex()) {
+                            redDotLED.material = matRedLED;
+                            console.log('Action Button: LED ON.');
+                        } else {
+                            redDotLED.material = matBlackDot;
+                            console.log('Action Button: LED OFF.');
+                        }
+                    }
                     console.log('Action Button: Simple press acknowledged.');
                 } else if (intersected.name.startsWith('BUTTON')) {
                     // Simple visual feedback for black buttons
