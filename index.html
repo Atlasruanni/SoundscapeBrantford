@@ -3,381 +3,626 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Retro Media Player - Prototype 360 Viewer</title>
+    <title>SoundScape Brantford</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/OBJLoader.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/MTLLoader.js"></script>
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
     <style>
-        body { margin: 0; overflow: hidden; background-color: #1a1a1a; font-family: 'Inter', sans-serif; }
-        #canvas-container { width: 100vw; height: 100vh; display: block; }
-        
-        /* Custom Scrollbar for panels */
-        ::-webkit-scrollbar { width: 6px; }
-        ::-webkit-scrollbar-track { background: #2d2d2d; }
-        ::-webkit-scrollbar-thumb { background: #555; border-radius: 3px; }
-
-        .glass-panel {
-            background: rgba(30, 30, 30, 0.85);
-            backdrop-filter: blur(12px);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-        }
-
-        #drop-zone {
-            transition: all 0.3s ease;
-        }
-        #drop-zone.drag-active {
-            background: rgba(59, 130, 246, 0.2);
-            border-color: #3b82f6;
-            transform: scale(1.02);
+        body { 
+            font-family: 'Inter', sans-serif; 
+            overflow-x: hidden; 
+            background-color: #080808; 
+            color: #f5f5f7;
         }
         
-        .loading-spinner {
-            border: 4px solid rgba(255, 255, 255, 0.1);
-            border-left-color: #3b82f6;
-            border-radius: 50%;
-            width: 40px;
-            height: 40px;
-            animation: spin 1s linear infinite;
+        /* Smooth scrolling */
+        html { scroll-behavior: smooth; }
+
+        /* Canvas fixed in background */
+        #canvas-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100vh;
+            z-index: 1;
+            outline: none;
+            /* CRITICAL: Enable pointer events on the canvas for raycasting */
+            pointer-events: auto; 
         }
-        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+        /* Overlay content */
+        .content-section {
+            position: relative;
+            z-index: 10;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            pointer-events: none;
+        }
+        
+        /* Glass UI */
+        .content-box {
+            pointer-events: auto;
+            background: rgba(18, 18, 20, 0.75);
+            backdrop-filter: blur(24px);
+            -webkit-backdrop-filter: blur(24px);
+            border-radius: 24px;
+            padding: 2.5rem;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            box-shadow: 0 24px 48px -12px rgba(0,0,0,0.6);
+        }
+
+        .scroll-indicator {
+            position: absolute;
+            bottom: 2rem;
+            left: 50%;
+            transform: translateX(-50%);
+            animation: bounce 2s infinite;
+            opacity: 0.5;
+        }
+
+        @keyframes bounce {
+            0%, 20%, 50%, 80%, 100% {transform: translateX(-50%) translateY(0);}
+            40% {transform: translateX(-50%) translateY(-10px);}
+            60% {transform: translateX(-50%) translateY(-5px);}
+        }
+
+        /* Spec Grid */
+        .spec-item {
+            background: rgba(255,255,255,0.03);
+            padding: 1.25rem;
+            border-radius: 12px;
+            text-align: center;
+            border: 1px solid rgba(255,255,255,0.05);
+        }
+
+        .loader {
+            position: fixed;
+            top:0; left:0; width:100%; height:100%;
+            background: #080808;
+            z-index: 9999;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            transition: opacity 0.5s;
+        }
+        
+        .nav-link {
+            position: relative;
+            color: #888;
+            transition: color 0.3s;
+        }
+        .nav-link:hover { color: #fff; }
     </style>
 </head>
-<body>
+<body class="text-slate-200">
+
+    <!-- Loader -->
+    <div id="loader" class="loader">
+        <div class="flex flex-col items-center">
+            <div class="animate-spin rounded-full h-8 w-8 border-t-2 border-r-2 border-yellow-500 mb-4"></div>
+            <p class="text-[10px] font-bold tracking-[0.3em] text-zinc-600 uppercase">Generating Geometry</p>
+        </div>
+    </div>
 
     <!-- 3D Canvas -->
     <div id="canvas-container"></div>
 
-    <!-- UI Overlay: Header -->
-    <div class="absolute top-0 left-0 w-full p-6 pointer-events-none flex justify-between items-start z-10">
-        <div>
-            <h1 class="text-white text-3xl font-bold tracking-tight drop-shadow-md">Retro Media Player</h1>
-            <p class="text-gray-400 text-sm mt-1">Prototype Build 1127150050 • Interactive Viewer</p>
+    <!-- Navigation -->
+    <nav class="fixed top-0 w-full z-50 px-8 py-6 flex justify-between items-center pointer-events-none mix-blend-difference text-white">
+        <div class="text-lg font-bold tracking-tighter pointer-events-auto">
+            AMBER<span class="text-yellow-400">.LAB</span>
         </div>
-        <div class="pointer-events-auto flex gap-3">
-             <button onclick="resetCamera()" class="glass-panel text-white px-4 py-2 rounded-lg text-sm hover:bg-white/10 transition-colors">
-                Reset View
-            </button>
-            <button onclick="toggleAutoRotate()" class="glass-panel text-white px-4 py-2 rounded-lg text-sm hover:bg-white/10 transition-colors">
-                Toggle Rotation
-            </button>
+        <div class="hidden md:flex gap-8 text-xs font-semibold uppercase tracking-widest pointer-events-auto">
+            <a href="#front" class="nav-link">Front</a>
+            <a href="#interface" class="nav-link">Interface</a>
+            <a href="#details" class="nav-link">Details</a>
+            <a href="#specs" class="nav-link">Specs</a>
         </div>
-    </div>
+    </nav>
 
-    <!-- UI Overlay: Instructions / Drop Zone -->
-    <div id="drop-zone" class="absolute inset-0 z-50 flex items-center justify-center bg-black/90 transition-opacity duration-500">
-        <div class="glass-panel p-12 rounded-2xl max-w-2xl w-full mx-4 text-center border-2 border-dashed border-gray-600">
-            <div id="upload-content">
-                <div class="mb-6 flex justify-center">
-                    <svg class="w-20 h-20 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>
-                    </svg>
-                </div>
-                <h2 class="text-3xl font-bold text-white mb-2">Load Prototype Assets</h2>
-                <p class="text-gray-400 mb-8 text-lg">
-                    Drag and drop your <strong>.obj</strong>, <strong>.mtl</strong>, and <strong>.jpg</strong> files here simultaneously.
-                </p>
-                <div class="bg-gray-800/50 p-4 rounded-lg text-left text-sm text-gray-300 inline-block">
-                    <p class="font-semibold mb-2 text-white">Required Files:</p>
-                    <ul class="list-disc pl-5 space-y-1">
-                        <li>Retro_Media_Player... .obj</li>
-                        <li>Retro_Media_Player... .mtl</li>
-                        <li>Retro_Media_Player... .jpg</li>
-                    </ul>
-                </div>
-                <div class="mt-8 text-xs text-gray-500">
-                    Your files are processed locally in your browser.
-                </div>
+    <!-- Section 1: Front Calibration -->
+    <section id="front" class="content-section justify-center text-center px-6">
+        <div class="content-box max-w-2xl transform translate-y-32 md:translate-y-48">
+            <div class="flex justify-center gap-3 mb-6">
+                <span class="bg-yellow-500/20 text-yellow-400 border border-yellow-500/30 px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest">Model 1.9 - Interactive</span>
             </div>
-            
-            <div id="loading-content" class="hidden flex flex-col items-center">
-                <div class="loading-spinner mb-4"></div>
-                <h3 class="text-xl text-white font-semibold">Processing Geometry...</h3>
-                <p class="text-gray-400 text-sm mt-2">Parsing 300k+ polygons</p>
-            </div>
+            <h1 class="text-4xl md:text-6xl font-bold mb-4 text-white tracking-tight">
+                Reference Precision.
+            </h1>
+            <p class="text-zinc-400 text-sm md:text-base max-w-md mx-auto leading-relaxed">
+                Click the buttons or the center dial to test the embedded functions and interactions.
+            </p>
+        </div>
+        <div class="scroll-indicator text-zinc-600 text-[10px] tracking-[0.2em] uppercase">Scroll to Interact</div>
+    </section>
 
-            <div id="error-content" class="hidden">
-                <div class="text-red-500 text-5xl mb-4">!</div>
-                <h3 class="text-xl text-white font-semibold" id="error-msg">Error loading files</h3>
-                <button onclick="location.reload()" class="mt-4 bg-red-600 hover:bg-red-700 text-white px-6 py-2 rounded transition-colors">Try Again</button>
+    <!-- Section 2: Interface -->
+    <section id="interface" class="content-section justify-start px-6 md:px-24">
+        <div class="content-box max-w-sm">
+            <h2 class="text-2xl font-bold mb-4 text-white">The Array.</h2>
+            <p class="text-zinc-400 text-sm leading-relaxed mb-6">
+                The input matrix features a dedicated <strong>Brushed Steel</strong> action key, now matching the tactile feedback of the standard keys.
+            </p>
+            <div class="flex items-center gap-4 text-xs font-mono text-zinc-500">
+                <div class="h-px bg-zinc-700 w-8"></div>
+                <span>STEEL_MAT_04</span>
             </div>
         </div>
-    </div>
+    </section>
 
-    <!-- UI Overlay: Controls -->
-    <div id="controls-panel" class="absolute bottom-6 right-6 z-10 glass-panel p-4 rounded-xl w-64 hidden opacity-0 transition-opacity duration-1000 transform translate-y-4">
-        <h3 class="text-white font-semibold mb-3 border-b border-gray-700 pb-2">Material Settings</h3>
-        
-        <div class="mb-4">
-            <label class="block text-xs text-gray-400 mb-1">Roughness</label>
-            <input type="range" min="0" max="1" step="0.01" value="0.5" id="roughness-slider" class="w-full accent-blue-500">
+    <!-- Section 3: Dial & Material -->
+    <section id="details" class="content-section justify-end px-6 md:px-24">
+        <div class="content-box max-w-sm">
+            <h2 class="text-2xl font-bold mb-4 text-white">Quad-Section Dial.</h2>
+            <p class="text-zinc-400 text-sm leading-relaxed mb-6">
+                The center pad toggles its color between Teal and Red, demonstrating a high-priority status function.
+            </p>
+             <div class="flex items-center gap-4 text-xs font-mono text-zinc-500">
+                <div class="h-px bg-zinc-700 w-8"></div>
+                <span>CYAN_ACCENT_100</span>
+            </div>
         </div>
-        
-        <div class="mb-4">
-            <label class="block text-xs text-gray-400 mb-1">Metalness</label>
-            <input type="range" min="0" max="1" step="0.01" value="0.1" id="metalness-slider" class="w-full accent-blue-500">
-        </div>
+    </section>
 
-        <div class="mb-2">
-            <label class="block text-xs text-gray-400 mb-1">Ambient Light</label>
-            <input type="range" min="0" max="2" step="0.1" value="0.8" id="ambient-slider" class="w-full accent-blue-500">
+    <!-- Section 4: Specs -->
+    <section id="specs" class="content-section min-h-screen items-start justify-center px-6 pt-32">
+        <div class="w-full max-w-4xl grid md:grid-cols-3 gap-6">
+            <div class="spec-item col-span-1 md:col-span-3 bg-gradient-to-r from-zinc-900 to-zinc-800 border-none">
+                <h3 class="text-yellow-400 text-xs font-bold uppercase tracking-widest mb-2">Color Calibration</h3>
+                <div class="text-white text-2xl font-mono">PANTONE 123 C</div>
+            </div>
+            <div class="spec-item">
+                <h3 class="text-zinc-500 text-[10px] uppercase tracking-widest mb-2">Dimensions</h3>
+                <div class="text-white font-medium">120mm x 52mm</div>
+            </div>
+            <div class="spec-item">
+                <h3 class="text-zinc-500 text-[10px] uppercase tracking-widest mb-2">Material</h3>
+                <div class="text-white font-medium">Polycarbonate</div>
+            </div>
+            <div class="spec-item">
+                <h3 class="text-zinc-500 text-[10px] uppercase tracking-widest mb-2">Interface</h3>
+                <div class="text-white font-medium">Hybrid Tactile</div>
+            </div>
         </div>
-    </div>
+    </section>
 
     <script>
-        // --- THREE.JS SETUP ---
+    // WRAPPED IN IIFE TO PREVENT VARIABLE REDECLARATION ERRORS
+    (function() {
+        // --- SCENE CONFIGURATION ---
+        const container = document.getElementById('canvas-container');
+        // Clear previous canvas if re-running
+        if(container.firstChild) {
+            container.removeChild(container.firstChild);
+        }
+
         const scene = new THREE.Scene();
-        scene.background = new THREE.Color(0x111111);
-        scene.fog = new THREE.Fog(0x111111, 2, 15); // Add depth
+        scene.background = new THREE.Color(0x080808); 
 
-        const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1000);
-        camera.position.set(3, 2, 4);
-
-        const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+        const camera = new THREE.PerspectiveCamera(35, window.innerWidth / window.innerHeight, 0.1, 100);
+        // Initial "Front" view for 1:1 match
+        camera.position.set(0, 0, 10); 
+        
+        const renderer = new THREE.WebGLRenderer({ alpha: false, antialias: true });
         renderer.setSize(window.innerWidth, window.innerHeight);
-        renderer.setPixelRatio(window.devicePixelRatio);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2)); // Cap pixel ratio for performance
         renderer.shadowMap.enabled = true;
         renderer.shadowMap.type = THREE.PCFSoftShadowMap;
-        renderer.outputEncoding = THREE.sRGBEncoding;
         renderer.toneMapping = THREE.ACESFilmicToneMapping;
-        document.getElementById('canvas-container').appendChild(renderer.domElement);
+        renderer.outputEncoding = THREE.sRGBEncoding;
+        container.appendChild(renderer.domElement);
+        
+        // --- INTERACTIVITY SETUP ---
+        let raycaster, mouse;
+        let clickableObjects = []; // Array to store meshes that can be clicked
 
-        // --- CONTROLS ---
-        const controls = new THREE.OrbitControls(camera, renderer.domElement);
-        controls.enableDamping = true;
-        controls.dampingFactor = 0.05;
-        controls.autoRotate = true;
-        controls.autoRotateSpeed = 2.0;
-        controls.minDistance = 1;
-        controls.maxDistance = 10;
+        raycaster = new THREE.Raycaster();
+        mouse = new THREE.Vector2();
 
-        // --- LIGHTING (Studio Setup) ---
-        const ambientLight = new THREE.AmbientLight(0xffffff, 0.8);
+
+        // --- LIGHTING (Studio High Contrast) ---
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.5); 
         scene.add(ambientLight);
 
-        // Key Light
-        const dirLight = new THREE.DirectionalLight(0xffffff, 1.2);
-        dirLight.position.set(5, 5, 5);
-        dirLight.castShadow = true;
-        dirLight.shadow.mapSize.width = 2048;
-        dirLight.shadow.mapSize.height = 2048;
-        scene.add(dirLight);
+        // Main Key Light
+        const mainLight = new THREE.DirectionalLight(0xffffff, 1.0);
+        mainLight.position.set(5, 5, 10);
+        mainLight.castShadow = true;
+        mainLight.shadow.bias = -0.0001;
+        mainLight.shadow.mapSize.width = 2048;
+        mainLight.shadow.mapSize.height = 2048;
+        scene.add(mainLight);
 
-        // Rim Light (Blue-ish)
-        const rimLight = new THREE.SpotLight(0x4455ff, 2.0);
-        rimLight.position.set(-5, 2, -5);
-        rimLight.lookAt(0, 0, 0);
-        scene.add(rimLight);
+        // Rim Light (Top)
+        const topLight = new THREE.SpotLight(0xffffff, 2.0);
+        topLight.position.set(0, 10, 0);
+        topLight.lookAt(0,0,0);
+        scene.add(topLight);
 
-        // Fill Light (Warm)
-        const fillLight = new THREE.PointLight(0xffaa00, 0.5);
+        // Fill Light (Warmth for the yellow)
+        const fillLight = new THREE.PointLight(0xffaa00, 0.3);
         fillLight.position.set(-5, 0, 5);
         scene.add(fillLight);
 
-        // Grid Floor
-        const gridHelper = new THREE.GridHelper(20, 40, 0x444444, 0x222222);
-        scene.add(gridHelper);
-
-        // --- FILE HANDLING LOGIC ---
-        const dropZone = document.getElementById('drop-zone');
-        const uploadContent = document.getElementById('upload-content');
-        const loadingContent = document.getElementById('loading-content');
-        const errorContent = document.getElementById('error-content');
-        const controlsPanel = document.getElementById('controls-panel');
-        let loadedObject = null;
-
-        // Drag effects
-        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
-            dropZone.addEventListener(eventName, preventDefaults, false);
+        // --- MATERIALS ---
+        
+        // 1. EXACT YELLOW BODY
+        const colorYellow = 0xFFB800; 
+        const matBody = new THREE.MeshPhysicalMaterial({
+            color: colorYellow,
+            roughness: 0.25,
+            metalness: 0.05,
+            clearcoat: 0.2,
+            clearcoatRoughness: 0.1
         });
 
-        function preventDefaults(e) {
-            e.preventDefault();
-            e.stopPropagation();
-        }
-
-        ['dragenter', 'dragover'].forEach(eventName => {
-            dropZone.addEventListener(eventName, () => dropZone.classList.add('drag-active'), false);
+        // 2. MATTE BLACK
+        const matBlack = new THREE.MeshStandardMaterial({
+            color: 0x111111,
+            roughness: 0.8,
+            metalness: 0.1
         });
 
-        ['dragleave', 'drop'].forEach(eventName => {
-            dropZone.addEventListener(eventName, () => dropZone.classList.remove('drag-active'), false);
+        // 3. TURQUOISE CENTER (DEFAULT)
+        const colorCyan = 0x00E5C0; // Vibrant Teal
+        const matCyan = new THREE.MeshPhysicalMaterial({
+            color: colorCyan,
+            roughness: 0.3,
+            metalness: 0.0,
+            emissive: colorCyan,
+            emissiveIntensity: 0.1
+        });
+        
+        // 4. ALTERNATE DIAL COLOR (Red/Pink)
+        const colorRed = 0xFF0055;
+        const matRedDial = new THREE.MeshPhysicalMaterial({
+            color: colorRed,
+            roughness: 0.3,
+            metalness: 0.0,
+            emissive: colorRed,
+            emissiveIntensity: 0.1
         });
 
-        // Drop Handler
-        dropZone.addEventListener('drop', handleDrop, false);
+        // 5. BRUSHED STEEL
+        const matSteel = new THREE.MeshStandardMaterial({
+            color: 0xE0E0E0,
+            roughness: 0.35,
+            metalness: 0.9,
+        });
+        
+        // 6. RED INDICATOR LED
+        const matRedLED = new THREE.MeshBasicMaterial({
+            color: 0xFF0000,
+        });
+        
+        // 7. BUTTON PRESS COLOR (Temporary)
+        const matGrayPress = new THREE.MeshStandardMaterial({
+            color: 0xaaaaaa,
+            roughness: 0.8,
+            metalness: 0.1
+        });
 
-        function handleDrop(e) {
-            const dt = e.dataTransfer;
-            const files = dt.files;
-            handleFiles(files);
+        // --- GEOMETRY HELPERS ---
+        function createRoundedRect(w, h, r) {
+            const shape = new THREE.Shape();
+            shape.moveTo(-w/2 + r, h/2);
+            shape.lineTo(w/2 - r, h/2);
+            shape.quadraticCurveTo(w/2, h/2, w/2, h/2 - r);
+            shape.lineTo(w/2, -h/2 + r);
+            shape.quadraticCurveTo(w/2, -h/2, w/2 - r, -h/2);
+            shape.lineTo(-w/2 + r, -h/2);
+            shape.quadraticCurveTo(-w/2, -h/2, -w/2, -h/2 + r);
+            shape.lineTo(-w/2, h/2 - r);
+            shape.quadraticCurveTo(-w/2, h/2, -w/2 + r, h/2);
+            return shape;
         }
 
-        function handleFiles(files) {
-            const fileMap = {};
-            
-            // Organize files by extension
-            for (let i = 0; i < files.length; i++) {
-                const file = files[i];
-                const ext = file.name.split('.').pop().toLowerCase();
-                
-                if (ext === 'obj') fileMap.obj = file;
-                else if (ext === 'mtl') fileMap.mtl = file;
-                else if (ext === 'jpg' || ext === 'png' || ext === 'jpeg') fileMap.texture = file;
-            }
+        // --- BUILD DEVICE ---
+        const deviceGroup = new THREE.Group();
 
-            if (!fileMap.obj || !fileMap.mtl) {
-                showError("Missing .obj or .mtl file. Please drop all files together.");
-                return;
-            }
+        // 1. CHASSIS
+        const chassisHeight = 2.2;
+        const chassisWidth = 5.3;
+        const chassisDepth = 0.6;
+        const chassisRadius = 0.55; 
 
-            // Start Loading UI
-            uploadContent.classList.add('hidden');
-            loadingContent.classList.remove('hidden');
+        const chassisShape = createRoundedRect(chassisWidth, chassisHeight, chassisRadius);
+        const chassisGeo = new THREE.ExtrudeGeometry(chassisShape, {
+            depth: chassisDepth,
+            bevelEnabled: true,
+            bevelThickness: 0.08,
+            bevelSize: 0.08,
+            bevelSegments: 6
+        });
+        chassisGeo.center();
+        const chassis = new THREE.Mesh(chassisGeo, matBody);
+        deviceGroup.add(chassis);
 
-            loadModel(fileMap);
+        const Z_SURFACE = (chassisDepth/2) + 0.08; // Front face Z
+
+        // 2. LEFT DIAL (With Quadrant Detail)
+        const dialGroup = new THREE.Group();
+        dialGroup.position.set(-1.45, 0, Z_SURFACE);
+
+        // A. Outer Dish (Black)
+        const DIAL_SIZE = 1.8;
+        const dishGeo = new THREE.CylinderGeometry(DIAL_SIZE/2, DIAL_SIZE/2 + 0.1, 0.15, 64);
+        const dish = new THREE.Mesh(dishGeo, matBlack);
+        dish.rotation.x = Math.PI/2;
+        dish.position.z = -0.05;
+        dialGroup.add(dish);
+
+        // B. Inner Concave Slope
+        const slopeGeo = new THREE.CylinderGeometry(DIAL_SIZE/3.2, DIAL_SIZE/2, 0.2, 64, 1, true);
+        const slope = new THREE.Mesh(slopeGeo, matBlack);
+        slope.rotation.x = Math.PI/2;
+        slope.position.z = 0.0;
+        dialGroup.add(slope);
+
+        // C. Quadrant Markers (The "Cross" lines)
+        const markerGeo = new THREE.BoxGeometry(0.04, DIAL_SIZE/2 - DIAL_SIZE/3.2, 0.05);
+        for(let i=0; i<4; i++) {
+            const m = new THREE.Mesh(markerGeo, matBlack);
+            const angle = (i * 90) * (Math.PI/180);
+            const radius = (DIAL_SIZE/2 + DIAL_SIZE/3.2) / 2;
+            m.position.set(Math.cos(angle)*radius, Math.sin(angle)*radius, 0.05);
+            m.rotation.z = angle;
+            dialGroup.add(m);
         }
 
-        function loadModel(fileMap) {
-            const manager = new THREE.LoadingManager();
-            
-            // 1. Create Blob URL for Texture
-            let textureUrl = null;
-            if (fileMap.texture) {
-                textureUrl = URL.createObjectURL(fileMap.texture);
+        // D. Teal Center Button (Clickable)
+        const btnGeo = new THREE.CylinderGeometry(DIAL_SIZE/3.3, DIAL_SIZE/3.3, 0.1, 64);
+        const btn = new THREE.Mesh(btnGeo, matCyan);
+        btn.rotation.x = Math.PI/2;
+        btn.position.z = 0.02;
+        btn.name = 'DIAL_CENTER'; // Add name for raycasting
+        dialGroup.add(btn);
+        clickableObjects.push(btn); // Add to clickable list
+
+        deviceGroup.add(dialGroup);
+
+        // 3. CENTER SPEAKER ARRAY
+        const SPK_W = 1.1;
+        const SPK_H = 1.5;
+        
+        // Texture Generation
+        const cvs = document.createElement('canvas');
+        cvs.width = 512; cvs.height = 512;
+        const ctx = cvs.getContext('2d');
+        ctx.fillStyle = '#FFB800'; 
+        ctx.fillRect(0,0,512,512);
+        ctx.fillStyle = '#221100'; // Dark recessed color
+        const gridX = 14;
+        const gridY = 18;
+        const pad = 30;
+        const stepX = (512 - pad*2) / gridX;
+        const stepY = (512 - pad*2) / gridY;
+
+        for(let y=0; y<=gridY; y++) {
+            for(let x=0; x<=gridX; x++) {
+                ctx.beginPath();
+                ctx.arc(pad + x*stepX, pad + y*stepY, 8, 0, Math.PI*2);
+                ctx.fill();
             }
-
-            // 2. Load MTL
-            const mtlLoader = new THREE.MTLLoader(manager);
-            
-            // We need to read the MTL as text first to fix the PNG/JPG path issue manually
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                let mtlText = e.target.result;
-                
-                // CRITICAL FIX: The MTL file references a .png, but user might upload .jpg
-                // We replace any map_Kd reference with our blob URL
-                if (textureUrl) {
-                    // Regex to find map_Kd line and replace filename
-                    mtlText = mtlText.replace(/map_Kd\s+.+/g, `map_Kd ${textureUrl}`);
-                }
-
-                // Parse the modified MTL content
-                const materials = mtlLoader.parse(mtlText);
-                materials.preload();
-
-                // 3. Load OBJ
-                const objLoader = new THREE.OBJLoader(manager);
-                objLoader.setMaterials(materials);
-                
-                const objReader = new FileReader();
-                objReader.onload = function(e) {
-                    const objText = e.target.result;
-                    const object = objLoader.parse(objText);
-                    
-                    onModelLoaded(object);
-                };
-                objReader.readAsText(fileMap.obj);
-            };
-            reader.readAsText(fileMap.mtl);
         }
+        const spkTex = new THREE.CanvasTexture(cvs);
+        const matSpk = new THREE.MeshPhysicalMaterial({
+            map: spkTex,
+            color: 0xFFB800,
+            roughness: 0.4
+        });
+        const spkPlane = new THREE.Mesh(new THREE.PlaneGeometry(SPK_W, SPK_H), matSpk);
+        spkPlane.position.set(0.1, 0, Z_SURFACE + 0.01);
+        deviceGroup.add(spkPlane);
 
-        function onModelLoaded(object) {
-            loadedObject = object;
+        // 4. RIGHT BUTTON CLUSTER
+        const padGroup = new THREE.Group();
+        padGroup.position.set(1.65, 0, Z_SURFACE);
 
-            // Normalize scale and position
-            const box = new THREE.Box3().setFromObject(object);
-            const center = box.getCenter(new THREE.Vector3());
-            const size = box.getSize(new THREE.Vector3());
+        // A. Housing (Rounded Rect)
+        const HS_SIZE = 1.8; 
+        const hsShape = createRoundedRect(HS_SIZE, HS_SIZE, 0.25);
+        const hsGeo = new THREE.ExtrudeGeometry(hsShape, { depth: 0.1, bevelEnabled: false});
+        hsGeo.center();
+        const hs = new THREE.Mesh(hsGeo, matBlack);
+        hs.position.z = 0.02;
+        padGroup.add(hs);
 
-            const maxDim = Math.max(size.x, size.y, size.z);
-            const scale = 2 / maxDim; // Scale to fit in view
+        // B. Buttons (4x Grid)
+        const gap = 0.08;
+        const btnDim = (HS_SIZE - (gap*3)) / 2;
+        
+        // Button Shape
+        const btnShape = createRoundedRect(btnDim, btnDim, 0.12);
+        const btnGeom = new THREE.ExtrudeGeometry(btnShape, {
+            depth: 0.15,
+            bevelEnabled: true,
+            bevelSize: 0.03,
+            bevelThickness: 0.03
+        });
+        btnGeom.center();
 
-            object.scale.set(scale, scale, scale);
-            object.position.sub(center.multiplyScalar(scale)); // Center at 0,0,0
+        const positions = [
+            { x: -btnDim/2 - gap/2, y: btnDim/2 + gap/2, mat: matBlack, name: 'BUTTON_TL', originalMat: matBlack }, // TL
+            { x: btnDim/2 + gap/2, y: btnDim/2 + gap/2, mat: matBlack, name: 'BUTTON_TR', originalMat: matBlack },  // TR
+            { x: -btnDim/2 - gap/2, y: -btnDim/2 - gap/2, mat: matBlack, name: 'BUTTON_BL', originalMat: matBlack },// BL
+            { x: btnDim/2 + gap/2, y: -btnDim/2 - gap/2, mat: matSteel, name: 'ACTION_BUTTON', originalMat: matSteel }  // BR (Steel)
+        ];
+
+        positions.forEach((p) => {
+            const b = new THREE.Mesh(btnGeom, p.mat);
+            b.position.set(p.x, p.y, 0.08);
+            b.name = p.name;
+            b.userData.originalMat = p.originalMat; // Store original material reference
             
-            // Lift slightly so it sits on grid
-            object.position.y += (size.y * scale) / 2;
+            // Add Red Dot to last button (BR)
+            if(p.name === 'ACTION_BUTTON') {
+                const dGeo = new THREE.CircleGeometry(0.04, 16);
+                const dMat = matRedLED;
+                const dot = new THREE.Mesh(dGeo, dMat);
+                // Position in top-right corner of the button
+                dot.position.set(btnDim/3, -btnDim/3, 0.08); 
+                b.add(dot);
+            }
+            padGroup.add(b);
+            clickableObjects.push(b); // Add to clickable list
+        });
 
-            // Better shadows for all meshes
-            object.traverse((child) => {
-                if (child.isMesh) {
-                    child.castShadow = true;
-                    child.receiveShadow = true;
-                    // Apply nice material properties if texture is loaded but looks flat
-                    if (child.material) {
-                        child.material.roughness = 0.5;
-                        child.material.metalness = 0.1;
+        deviceGroup.add(padGroup);
+
+        scene.add(deviceGroup);
+
+        // --- INTERACTION LOGIC ---
+        function onPointerDown(event) {
+            // Calculate mouse position in normalized device coordinates (-1 to +1)
+            mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+            mouse.y = - (event.clientY / window.innerHeight) * 2 + 1;
+
+            // Update the picking ray with the camera and mouse position
+            raycaster.setFromCamera(mouse, camera);
+
+            // Calculate objects intersecting the picking ray
+            const intersects = raycaster.intersectObjects(clickableObjects, false);
+
+            if (intersects.length > 0) {
+                const intersected = intersects[0].object;
+                
+                // Visual Feedback: Button Press Animation
+                const originalZ = intersected.position.z;
+                const originalScale = intersected.scale.clone();
+                intersected.position.z -= 0.02; // Press in slightly
+                intersected.scale.set(0.98, 0.98, 0.98); // Shrink slightly
+
+                setTimeout(() => {
+                    // Release animation
+                    intersected.position.z = originalZ;
+                    intersected.scale.copy(originalScale);
+                    // Also reset temporary press color
+                    if (intersected.name.startsWith('BUTTON') || intersected.name === 'ACTION_BUTTON') {
+                        intersected.material = intersected.userData.originalMat;
                     }
+                }, 150);
+
+                console.log('Button clicked:', intersected.name);
+
+                // --- DEMONSTRATE FUNCTIONALITY ---
+                if (intersected.name === 'DIAL_CENTER') {
+                    // Center Dial (Teal) Toggles its color
+                    const dialCenter = scene.getObjectByName('DIAL_CENTER');
+                    if (dialCenter) {
+                        // Check against the hex value to avoid material object mismatch issues
+                        if (dialCenter.material.color.getHex() === matCyan.color.getHex()) {
+                            dialCenter.material = matRedDial;
+                            console.log('Dial Center: Color changed to Red (Status Toggled).');
+                        } else {
+                            dialCenter.material = matCyan;
+                            console.log('Dial Center: Color changed back to Teal (Status Toggled).');
+                        }
+                    }
+                } else if (intersected.name === 'ACTION_BUTTON') {
+                    // ACTION BUTTON: Simple visual feedback (same as black buttons)
+                    intersected.material = matGrayPress;
+                    console.log('Action Button: Simple press acknowledged.');
+                } else if (intersected.name.startsWith('BUTTON')) {
+                    // Simple visual feedback for black buttons
+                    intersected.material = matGrayPress;
+                }
+            }
+        }
+
+        container.addEventListener('pointerdown', onPointerDown, false);
+
+        // --- ANIMATION / SCROLL LOGIC ---
+        
+        // Defines camera and object targets for each section
+        const targets = {
+            'front': { 
+                cam: {x:0, y:-0.8, z:8.5}, // Camera moved down more to shift object higher
+                rot: {x:0, y:0, z:0} 
+            },
+            'interface': { 
+                cam: {x:0.5, y:0, z:5}, // Camera moved further left to shift object more right
+                rot: {x:0, y:0.25, z:0} // Slight turn to see buttons
+            },
+            'details': { 
+                cam: {x:-0.5, y:0, z:5}, // Camera moved further right to shift object more left
+                rot: {x:0, y:-0.25, z:0} // Slight turn to see dial
+            },
+            'specs': { 
+                cam: {x:0, y:1.2, z:7}, // Camera lowered to reveal bottom edge
+                rot: {x:THREE.MathUtils.degToRad(-90), y:0, z:0} // Rotate -90 degrees around X-axis (Dial faces top)
+            }
+        };
+
+        let currentSection = 'front';
+
+        function updateScroll() {
+            const sections = ['front', 'interface', 'details', 'specs'];
+            let bestMatch = sections[0];
+            let maxVis = 0;
+
+            sections.forEach(id => {
+                const el = document.getElementById(id);
+                if (!el) return;
+                const rect = el.getBoundingClientRect();
+                // Simple visibility check
+                const visibleHeight = Math.min(rect.bottom, window.innerHeight) - Math.max(rect.top, 0);
+                if (visibleHeight > maxVis) {
+                    maxVis = visibleHeight;
+                    bestMatch = id;
                 }
             });
-
-            scene.add(object);
-
-            // Hide Loading Overlay
-            dropZone.style.opacity = '0';
-            setTimeout(() => {
-                dropZone.style.display = 'none';
-                controlsPanel.classList.remove('hidden');
-                // Trigger fade in
-                setTimeout(() => {
-                    controlsPanel.classList.remove('opacity-0', 'translate-y-4');
-                }, 50);
-            }, 500);
+            currentSection = bestMatch;
         }
 
-        function showError(msg) {
-            loadingContent.classList.add('hidden');
-            uploadContent.classList.add('hidden');
-            errorContent.classList.remove('hidden');
-            document.getElementById('error-msg').innerText = msg;
-        }
+        window.addEventListener('scroll', updateScroll);
 
-        // --- ANIMATION LOOP ---
         function animate() {
             requestAnimationFrame(animate);
-            controls.update();
+
+            const tgt = targets[currentSection];
+            if(tgt) {
+                // Smooth Camera Interp
+                camera.position.x += (tgt.cam.x - camera.position.x) * 0.05;
+                camera.position.y += (tgt.cam.y - camera.position.y) * 0.05;
+                camera.position.z += (tgt.cam.z - camera.position.z) * 0.05;
+
+                // Smooth Object Rotation
+                deviceGroup.rotation.x += (tgt.rot.x - deviceGroup.rotation.x) * 0.05;
+                deviceGroup.rotation.y += (tgt.rot.y - deviceGroup.rotation.y) * 0.05;
+                deviceGroup.rotation.z += (tgt.rot.z - deviceGroup.rotation.z) * 0.05;
+            }
+
+            // Idle Float
+            const time = Date.now() * 0.001;
+            deviceGroup.position.y = Math.sin(time) * 0.05;
+
             renderer.render(scene, camera);
         }
-        animate();
 
-        // --- UI HANDLERS ---
+        // --- RESIZE HANDLER ---
         window.addEventListener('resize', () => {
             camera.aspect = window.innerWidth / window.innerHeight;
             camera.updateProjectionMatrix();
             renderer.setSize(window.innerWidth, window.innerHeight);
         });
 
-        function resetCamera() {
-            camera.position.set(3, 2, 4);
-            controls.target.set(0, 0, 0);
-            controls.update();
-        }
+        // --- INIT ---
+        window.onload = () => {
+            const loader = document.getElementById('loader');
+            if (loader) {
+                loader.style.opacity = 0;
+                setTimeout(() => {
+                    loader.style.display = 'none';
+                }, 500);
+            }
+            animate();
+        };
 
-        function toggleAutoRotate() {
-            controls.autoRotate = !controls.autoRotate;
-        }
-
-        // Material Sliders
-        document.getElementById('roughness-slider').addEventListener('input', (e) => {
-            if (!loadedObject) return;
-            loadedObject.traverse((child) => {
-                if (child.isMesh && child.material) child.material.roughness = parseFloat(e.target.value);
-            });
-        });
-
-        document.getElementById('metalness-slider').addEventListener('input', (e) => {
-            if (!loadedObject) return;
-            loadedObject.traverse((child) => {
-                if (child.isMesh && child.material) child.material.metalness = parseFloat(e.target.value);
-            });
-        });
-
-        document.getElementById('ambient-slider').addEventListener('input', (e) => {
-            ambientLight.intensity = parseFloat(e.target.value);
-        });
-
+    })(); // End IIFE
     </script>
 </body>
 </html>
