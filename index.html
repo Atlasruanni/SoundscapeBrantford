@@ -250,17 +250,18 @@
                     </div>
                 </div>
                 <p class="text-zinc-300 text-sm leading-relaxed">
-                    A single, intuitive dial controls volume and playback using globally recognized symbols. Designed for universal accessibility without language barriers.
+                    A single, intuitive dial controls volume and playback using globally recognized symbols.
+                    <span class="text-white block mt-2 font-medium">The central green light pulses to represent battery life and active device status.</span>
                 </p>
             </div>
         </div>
     </section>
 
-    <!-- Section 4: Specs & Maintenance (Grid Layout) -->
-    <section id="specs" class="content-section min-h-screen flex flex-col justify-center items-center px-6 py-24">
+    <!-- Section 4: Maintenance (Clean Layout) -->
+    <section id="specs" class="content-section min-h-screen flex flex-col justify-start items-center px-6 pt-32 relative">
         
         <!-- Maintenance Alert Style -->
-        <div class="fade-in-section w-full max-w-3xl mb-12">
+        <div class="fade-in-section w-full max-w-3xl">
             <div class="glass-card p-1 flex items-center gap-4 bg-red-900/10 border-red-500/20">
                 <div class="bg-red-500/10 p-4 h-full flex items-center rounded-l-[28px]">
                     <span class="text-red-500 font-bold text-xs uppercase tracking-wider rotate-180" style="writing-mode: vertical-rl;">Admin</span>
@@ -273,24 +274,8 @@
                 </div>
             </div>
         </div>
-
-        <!-- Tech Specs Grid -->
-        <div class="fade-in-section w-full max-w-4xl grid grid-cols-2 md:grid-cols-4 gap-4">
-            <div class="glass-card p-6 flex flex-col justify-center text-center col-span-2 md:col-span-2">
-                <p class="text-zinc-500 text-xs font-bold uppercase tracking-widest mb-2">Device Name</p>
-                <p class="text-2xl md:text-3xl font-bold text-white tracking-tight">BRANTFORD MIX</p>
-            </div>
-            <div class="glass-card p-6 flex flex-col justify-center text-center">
-                <p class="text-zinc-500 text-xs font-bold uppercase tracking-widest mb-2">Material</p>
-                <p class="text-white font-medium">Reinforced<br>Polycarbonate</p>
-            </div>
-             <div class="glass-card p-6 flex flex-col justify-center text-center">
-                <p class="text-zinc-500 text-xs font-bold uppercase tracking-widest mb-2">Intelligence</p>
-                <p class="text-white font-medium">Real-Time<br>Data Feed</p>
-            </div>
-        </div>
         
-        <footer class="mt-24 text-zinc-700 text-xs tracking-wider uppercase">
+        <footer class="absolute bottom-6 w-full text-center text-white/50 text-xs tracking-wider uppercase">
             Designed for Brantford &copy; 2025
         </footer>
     </section>
@@ -548,7 +533,10 @@
                     interactiveElement.children.forEach(child => child.material = momentaryMaterial);
                 }
                 
-                if (interactiveElement.name === 'RESTART_BUTTON') interactiveElement.position.y -= 0.01;
+                // Interaction Logic Change:
+                // For RESTART_BUTTON (which is on the bottom face, Y = -1.1), pressing "in" means moving UP in Y (towards 0).
+                // So we add to Y.
+                if (interactiveElement.name === 'RESTART_BUTTON') interactiveElement.position.y += 0.01;
                 else interactiveElement.position.z -= 0.01;
 
                 interactiveElement.scale.set(0.98, 0.98, 0.98);
@@ -580,7 +568,8 @@
             'front': { cam: {x:0, y:-0.8, z:8.5}, rot: {x:0, y:0, z:0} },
             'functional': { cam: {x:0.5, y:0, z:5}, rot: {x:0, y:0.25, z:0} },
             'universal': { cam: {x:-0.5, y:0, z:5}, rot: {x:0, y:-0.25, z:0} },
-            'specs': { cam: {x:0, y:1.2, z:7}, rot: {x:THREE.MathUtils.degToRad(-90), y:0, z:0} }
+            // CRITICAL FIX: Rotate -90 (Math.PI/2) to show the bottom face
+            'specs': { cam: {x:0, y:0.8, z:7}, rot: {x:THREE.MathUtils.degToRad(-90), y:0, z:0} } 
         };
         let currentSection = 'front';
 
@@ -611,6 +600,18 @@
                 deviceGroup.rotation.z += (tgt.rot.z - deviceGroup.rotation.z) * 0.05;
             }
             deviceGroup.position.y = Math.sin(Date.now() * 0.001) * 0.05;
+
+            // Battery Pulse Effect for Universal Section
+            if (currentSection === 'universal') {
+                // Slower cycle: Reduced speed factor from 0.005 to 0.002
+                // Dimmest point: Reduced offset to 0.1 (was 1.0)
+                const pulse = (Math.sin(Date.now() * 0.002) + 1) * 1.5 + 0.1; 
+                matCyan.emissiveIntensity = pulse;
+            } else {
+                // Smoothly return to default
+                matCyan.emissiveIntensity += (3.0 - matCyan.emissiveIntensity) * 0.1;
+            }
+
             if (composer) composer.render(); else renderer.render(scene, camera);
         }
 
