@@ -138,6 +138,43 @@
             opacity: 1;
             transform: none;
         }
+        
+        /* Audio Start Overlay */
+        #audio-start-overlay {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: rgba(255,255,255,0.1);
+            backdrop-filter: blur(10px);
+            padding: 10px 20px;
+            border-radius: 20px;
+            border: 1px solid rgba(255,255,255,0.2);
+            color: white;
+            font-size: 12px;
+            z-index: 100;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.5s;
+        }
+
+        /* Floating Message Box */
+        #message-box {
+            position: fixed;
+            top: 20%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            padding: 1rem;
+            background: rgba(255, 0, 0, 0.8);
+            color: white;
+            border-radius: 10px;
+            z-index: 1000;
+            opacity: 0;
+            transition: opacity 0.5s, transform 0.5s;
+            pointer-events: none;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+            font-size: 14px;
+        }
+
     </style>
 </head>
 <body class="text-slate-200 antialiased">
@@ -149,6 +186,11 @@
             <p class="text-[10px] font-bold tracking-[0.3em] text-zinc-500 uppercase">Loading Experience</p>
         </div>
     </div>
+    
+    <div id="audio-start-overlay">Tap anywhere to start sound</div>
+
+    <!-- Feedback Message Box -->
+    <div id="message-box"></div>
 
     <!-- 3D Canvas -->
     <div id="canvas-container"></div>
@@ -281,8 +323,146 @@
     </section>
 
     <script>
+    // Utility function to display temporary messages to the user
+    function showMessage(text, duration = 3000) {
+        const box = document.getElementById('message-box');
+        if (!box) return;
+        
+        box.textContent = text;
+        box.style.opacity = 1;
+        
+        // Hide after duration
+        setTimeout(() => {
+            box.style.opacity = 0;
+        }, duration);
+    }
+    
+    // AUDIO MANAGER (FIXED)
+    const AudioManager = {
+        sources: {
+            // Background Jazz Music (Default) - Loop. Using known good CDN link.
+            jazz: new Audio('https://cdn.jsdelivr.net/gh/brentd/static-files@main/audio/jazz.mp3'),
+            // Pop Music (Music Button) - Loop. Using known good CDN link.
+            pop: new Audio('https://cdn.jsdelivr.net/gh/brentd/static-files@main/audio/ambient.mp3'),
+            // Recording Beep Sound Effect
+            recordBeep: new Audio('https://actions.google.com/sounds/v1/alarms/beep_short.ogg')
+        },
+        current: null,
+        isRecording: false,
+        recorder: null,
+        stream: null,
+        hasInteracted: false,
+
+        init() {
+            // Set loops and initial volume
+            this.sources.jazz.loop = true;
+            this.sources.pop.loop = true;
+            this.sources.jazz.volume = 0.5;
+            this.sources.pop.volume = 0.5;
+            this.sources.recordBeep.volume = 0.7;
+        },
+
+        startBackground() {
+            if(!this.hasInteracted) {
+                this.hasInteracted = true;
+                this.play('jazz');
+                const overlay = document.getElementById('audio-start-overlay');
+                if (overlay) overlay.style.opacity = 0;
+            }
+        },
+
+        stopAll() {
+            // Stop both music sources
+            this.sources.jazz.pause();
+            this.sources.pop.pause();
+            // Cancel any ongoing TTS
+            window.speechSynthesis.cancel();
+            this.current = null;
+        },
+
+        play(type) {
+            if(this.isRecording) return;
+            
+            // If the requested type is already playing (and it's not a short TTS/SFX), ignore the command
+            if (this.current === type && (type === 'jazz' || type === 'pop')) {
+                return;
+            }
+
+            this.stopAll();
+            
+            if (type === 'jazz') {
+                this.sources.jazz.currentTime = 0; // Rewind to ensure it starts cleanly
+                // Play is robust enough now, catches interaction error if necessary
+                this.sources.jazz.play().catch(e => console.log("Audio play failed. Ensure interaction occurred.")); 
+                this.current = 'jazz';
+            } else if (type === 'pop') {
+                this.sources.pop.currentTime = 0; // Rewind to start of song
+                this.sources.pop.play().catch(e => console.log("Pop play failed."));
+                this.current = 'pop';
+            } else if (type === 'story') {
+                const text = "Welcome to Brantford history. In 1874, Alexander Graham Bell invented the telephone right here. The Bell Homestead is a national historic site honoring this breakthrough.";
+                const u = new SpeechSynthesisUtterance(text);
+                u.lang = 'en-US'; // Explicitly set language to English
+                window.speechSynthesis.speak(u);
+                this.current = 'story';
+                u.onend = () => this.play('jazz'); 
+            } else if (type === 'info') {
+                const text = "Brantford City Update. Current temperature is 14 degrees Celsius. Road work on Colborne Street is expected to finish by Friday. Have a safe walk.";
+                const u = new SpeechSynthesisUtterance(text);
+                u.lang = 'en-US'; // Explicitly set language to English
+                window.speechSynthesis.speak(u);
+                this.current = 'info';
+                u.onend = () => this.play('jazz');
+            }
+        },
+
+        async toggleRecord(onStart, onStop) {
+            if (this.isRecording) {
+                // STOP RECORDING
+                if(this.recorder && this.recorder.state !== 'inactive') {
+                    this.recorder.stop();
+                }
+                if (this.stream) {
+                    this.stream.getTracks().forEach(track => track.stop());
+                }
+                this.isRecording = false;
+                onStop(); // Callback for LED (turn off)
+                this.play('jazz');
+                console.log("Recording stopped. Jazz resumed.");
+            } else {
+                // START RECORDING
+                this.stopAll();
+                this.sources.recordBeep.currentTime = 0;
+                this.sources.recordBeep.play(); // Play SFX before mic request
+
+                try {
+                    // Request microphone access
+                    this.stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                    this.recorder = new MediaRecorder(this.stream);
+                    this.recorder.start();
+                    this.isRecording = true;
+                    onStart(); // Callback for LED (turn on)
+                    console.log("Recording started. Waiting for second click to stop.");
+                } catch (e) {
+                    // Handle mic refusal/failure gracefully
+                    onStop();
+                    // Display user-friendly message
+                    if (e.name === "NotAllowedError" || e.name === "Permission denied") {
+                        showMessage("Recording failed: Microphone access was denied by the browser.", 4000);
+                    } else {
+                        showMessage("Recording failed due to a device error.", 4000);
+                    }
+                    console.error("Microphone access denied or failed. Resuming jazz.", e);
+                    this.play('jazz');
+                }
+            }
+        }
+    };
+
     // WRAPPED IN IIFE
     (function() {
+        AudioManager.init();
+
         // --- SCROLL OBSERVER FOR FADE IN EFFECTS ---
         const observerOptions = {
             root: null,
@@ -302,12 +482,12 @@
             observer.observe(section);
         });
 
-        // --- THREE.JS SCENE CONFIGURATION (UNCHANGED LOGIC) ---
+        // --- THREE.JS SCENE CONFIGURATION ---
         const container = document.getElementById('canvas-container');
         if(container.firstChild) container.removeChild(container.firstChild);
 
         const scene = new THREE.Scene();
-        scene.background = new THREE.Color(0x000000); // Pure black for OLED feel
+        scene.background = new THREE.Color(0x000000); 
 
         const camera = new THREE.PerspectiveCamera(35, window.innerWidth / window.innerHeight, 0.1, 100);
         camera.position.set(0, 0, 10); 
@@ -400,9 +580,9 @@
         chassisGeo.center();
         const chassis = new THREE.Mesh(chassisGeo, matBody);
         deviceGroup.add(chassis);
-        const Z_SURFACE = 0.38; // (0.6/2) + 0.08
+        const Z_SURFACE = 0.38; 
 
-        // Left Dial
+        // Left Dial (Universal Controls)
         const dialGroup = new THREE.Group();
         dialGroup.position.set(-1.75, 0, Z_SURFACE);
         
@@ -457,7 +637,7 @@
         spkPlane.position.set(-0.21, 0, Z_SURFACE + 0.01); 
         deviceGroup.add(spkPlane);
 
-        // Right Button Cluster
+        // Right Button Cluster (Functional Keys)
         const padGroup = new THREE.Group();
         padGroup.position.set(1.55, 0, Z_SURFACE); 
         const hsShape = createRoundedRect(2.24, 1.74, 0.25);
@@ -499,7 +679,7 @@
         });
         deviceGroup.add(padGroup);
         
-        // Restart Button
+        // Restart Button (Bottom Face)
         const bottomBtnShape = createRoundedRect(1.0, 0.2, 0.08);
         const bottomBtnGeo = new THREE.ExtrudeGeometry(bottomBtnShape, { depth: 0.02, bevelEnabled: true, bevelSize: 0.03, bevelThickness: 0.03 });
         bottomBtnGeo.center();
@@ -513,8 +693,11 @@
 
         scene.add(deviceGroup);
 
-        // --- INTERACTION ---
+        // --- INTERACTION LOGIC ---
         function onPointerDown(event) {
+            // CRITICAL: Start background audio on first interaction
+            AudioManager.startBackground();
+
             mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
             mouse.y = - (event.clientY / window.innerHeight) * 2 + 1;
             raycaster.setFromCamera(mouse, camera);
@@ -522,43 +705,78 @@
 
             if (intersects.length > 0) {
                 let interactiveElement = intersects[0].object;
-                if (interactiveElement.parent && interactiveElement.parent.name === 'VOLUME_DIAL_RIM') interactiveElement = interactiveElement.parent;
-
+                if (interactiveElement.parent && interactiveElement.parent.name === 'VOLUME_DIAL_RIM') {
+                    interactiveElement = interactiveElement.parent;
+                } else if (interactiveElement.name === 'MUSIC_BUTTON' || interactiveElement.name === 'STORY_BUTTON' || interactiveElement.name === 'CITY_INFO_BUTTON' || interactiveElement.name === 'RECORD_BUTTON') {
+                    // Use the mesh itself
+                } else if (interactiveElement.name !== 'PLAY_PAUSE_BUTTON' && interactiveElement.name !== 'RESTART_BUTTON') {
+                    // Check if a child of a clickable object was hit (e.g., a detail inside a dial component)
+                    let parent = intersects[0].object.parent;
+                    while (parent) {
+                        if (parent.name && clickableObjects.some(obj => obj.uuid === parent.uuid)) {
+                            interactiveElement = parent;
+                            break;
+                        }
+                        parent = parent.parent;
+                    }
+                }
+                
                 const originalZ = interactiveElement.position.z;
                 const originalY = interactiveElement.position.y;
                 const originalScale = interactiveElement.scale.clone();
                 let momentaryMaterial = matGrayPress;
 
+                // 1. Visual Press (Momentary)
                 if (interactiveElement.name === 'VOLUME_DIAL_RIM') {
                     interactiveElement.children.forEach(child => child.material = momentaryMaterial);
                 }
                 
-                // Interaction Logic Change:
-                // For RESTART_BUTTON (which is on the bottom face, Y = -1.1), pressing "in" means moving UP in Y (towards 0).
-                // So we add to Y.
-                if (interactiveElement.name === 'RESTART_BUTTON') interactiveElement.position.y += 0.01;
-                else interactiveElement.position.z -= 0.01;
-
-                interactiveElement.scale.set(0.98, 0.98, 0.98);
-                
-                if (interactiveElement.name !== 'VOLUME_DIAL_RIM' && interactiveElement.name !== 'PLAY_PAUSE_BUTTON' && interactiveElement.name !== 'RECORD_BUTTON') {
+                // Apply momentary material to all functional buttons
+                if (['MUSIC_BUTTON', 'STORY_BUTTON', 'CITY_INFO_BUTTON', 'RECORD_BUTTON'].includes(interactiveElement.name)) {
                     interactiveElement.material = momentaryMaterial;
                 }
 
+                if (interactiveElement.name === 'RESTART_BUTTON') interactiveElement.position.y += 0.01;
+                else interactiveElement.position.z -= 0.01;
+                interactiveElement.scale.set(0.98, 0.98, 0.98);
+
+                // 2. Audio Logic
+                if (interactiveElement.name === 'MUSIC_BUTTON') AudioManager.play('pop');
+                else if (interactiveElement.name === 'STORY_BUTTON') AudioManager.play('story');
+                else if (interactiveElement.name === 'CITY_INFO_BUTTON') AudioManager.play('info');
+                else if (interactiveElement.name === 'RECORD_BUTTON') {
+                    AudioManager.toggleRecord(
+                        () => { 
+                            // ON START: Red LED ON
+                            redDotLED.material = matRedLED;
+                            showMessage("Recording... Click again to stop.", 50000); 
+                        }, 
+                        () => { 
+                            // ON STOP: Black LED OFF
+                            redDotLED.material = matBlackDot; 
+                        } 
+                    );
+                } 
+                else if (interactiveElement.name === 'PLAY_PAUSE_BUTTON' || interactiveElement.name === 'VOLUME_DIAL_RIM') {
+                    AudioManager.play('jazz');
+                }
+                else if (interactiveElement.name === 'RESTART_BUTTON') {
+                    location.reload();
+                }
+
+                // 3. Release (Revert)
                 setTimeout(() => {
                     if (interactiveElement.name === 'RESTART_BUTTON') interactiveElement.position.y = originalY;
                     else interactiveElement.position.z = originalZ;
                     interactiveElement.scale.copy(originalScale);
                     
-                    if (interactiveElement.name === 'VOLUME_DIAL_RIM') interactiveElement.children.forEach(child => child.material = matBlack);
-                    else if (interactiveElement.name !== 'PLAY_PAUSE_BUTTON') interactiveElement.material = interactiveElement.userData.originalMat || matBlack;
+                    // Revert Materials
+                    if (interactiveElement.name === 'VOLUME_DIAL_RIM') {
+                        interactiveElement.children.forEach(child => child.material = matBlack);
+                    } else if (interactiveElement.name !== 'PLAY_PAUSE_BUTTON') {
+                        interactiveElement.material = interactiveElement.userData.originalMat || matBlack;
+                    }
                 }, 150);
-
-                if (interactiveElement.name === 'RECORD_BUTTON' && redDotLED) {
-                    redDotLED.material = (redDotLED.material.color.getHex() === matBlackDot.color.getHex()) ? matRedLED : matBlackDot;
-                }
-                
-                console.log('Clicked:', interactiveElement.name);
             }
         }
         container.addEventListener('pointerdown', onPointerDown, false);
@@ -568,7 +786,7 @@
             'front': { cam: {x:0, y:-0.8, z:8.5}, rot: {x:0, y:0, z:0} },
             'functional': { cam: {x:0.5, y:0, z:5}, rot: {x:0, y:0.25, z:0} },
             'universal': { cam: {x:-0.5, y:0, z:5}, rot: {x:0, y:-0.25, z:0} },
-            // CRITICAL FIX: Rotate -90 (Math.PI/2) to show the bottom face
+            // Camera position raised for last phase, and rotated to show bottom face
             'specs': { cam: {x:0, y:0.8, z:7}, rot: {x:THREE.MathUtils.degToRad(-90), y:0, z:0} } 
         };
         let currentSection = 'front';
@@ -601,14 +819,11 @@
             }
             deviceGroup.position.y = Math.sin(Date.now() * 0.001) * 0.05;
 
-            // Battery Pulse Effect for Universal Section
+            // Battery Pulse Effect
             if (currentSection === 'universal') {
-                // Slower cycle: Reduced speed factor from 0.005 to 0.002
-                // Dimmest point: Reduced offset to 0.1 (was 1.0)
                 const pulse = (Math.sin(Date.now() * 0.002) + 1) * 1.5 + 0.1; 
                 matCyan.emissiveIntensity = pulse;
             } else {
-                // Smoothly return to default
                 matCyan.emissiveIntensity += (3.0 - matCyan.emissiveIntensity) * 0.1;
             }
 
@@ -622,14 +837,27 @@
             if (composer) composer.setSize(window.innerWidth, window.innerHeight);
         });
 
+        const boundStartBackground = AudioManager.startBackground.bind(AudioManager);
+
         window.onload = () => {
             const loader = document.getElementById('loader');
             if (loader) {
                 loader.style.opacity = 0;
-                setTimeout(() => loader.style.display = 'none', 500);
+                setTimeout(() => {
+                    loader.style.display = 'none';
+                    // Show audio overlay
+                    const overlay = document.getElementById('audio-start-overlay');
+                    if (overlay && !AudioManager.hasInteracted) {
+                        overlay.style.opacity = 1;
+                    }
+                }, 500);
             }
             animate();
         };
+        
+        // Fix: Use the bound function to ensure 'this' refers to AudioManager
+        document.addEventListener('click', boundStartBackground, { once: true });
+        document.addEventListener('touchstart', boundStartBackground, { once: true });
     })();
     </script>
 </body>
