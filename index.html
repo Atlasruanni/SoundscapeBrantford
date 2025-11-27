@@ -68,13 +68,7 @@
         }
 
         /* Typography Enhancements */
-        .hero-title {
-            background: linear-gradient(180deg, #FFFFFF 0%, #888888 100%);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            letter-spacing: -0.05em;
-            /* Text shadow removed as requested */
-        }
+        /* hero-title class removed from CSS as it's no longer used for the gradient text effect */
         
         .dark-text-shadow {
             /* Text shadow removed as requested */
@@ -83,7 +77,6 @@
         /* Section titles */
         .section-title {
             letter-spacing: -0.03em;
-            /* USER REQUEST: Add text shadow to section titles */
             text-shadow: 0 4px 10px rgba(0, 0, 0, 0.5); 
         }
 
@@ -230,8 +223,9 @@
     <section id="front" class="content-section justify-center text-center px-6">
         <div class="fade-in-section max-w-4xl mx-auto mt-[40vh] md:mt-[35vh]">
             <!-- Removed Model 2.0 tag here -->
-            <h1 class="hero-title text-5xl md:text-8xl font-bold mb-6">
-                Public Safety.<br>Reimagined.
+            <!-- UPDATED: Applying section-title styling (including text shadow) to the hero title -->
+            <h1 class="section-title text-5xl md:text-8xl font-bold mb-6 text-white">
+                Public Atmosphere.<br>Reimagined.
             </h1>
             <p class="text-zinc-400 text-lg md:text-xl max-w-2xl mx-auto leading-relaxed font-light dark-text-shadow">
                 An interactive audio experience designed to enhance community connection and deliver real-time information to Brantford.
@@ -879,7 +873,8 @@
                         if (relativeY > 0) {
                             AudioManager.volumeUp(); // Top
                         } else {
-                            AudioManager.volumeDown(); // Bottom (Fix applied here via better sensitivity)
+                            // FIX: Ensure Bottom Quadrant triggers Volume Down
+                            AudioManager.volumeDown(); // Bottom 
                         }
                     }
                 } 
@@ -973,10 +968,9 @@
             const universalOverlay = document.getElementById('universal-overlay');
             const maintenanceOverlay = document.getElementById('maintenance-overlay');
             
-            // Overlay now relies on parent element's fade-in/out via CSS classes
+            // Universal Overlay relies on parent element's fade-in/out via CSS classes
             if (universalOverlay) {
                  // Check if parent (fade-in-section) is visible. 
-                 // If not, we set opacity to 0 and disable pointer events
                  const isUniversalSectionVisible = document.getElementById('universal').querySelector('.fade-in-section.is-visible');
                  if (isUniversalSectionVisible) {
                     universalOverlay.style.opacity = 1;
@@ -988,6 +982,7 @@
             }
 
 
+            // Maintenance Overlay is controlled by the currentSection match
             if (maintenanceOverlay) {
                 if (currentSection === 'specs') {
                     maintenanceOverlay.style.opacity = 1;
