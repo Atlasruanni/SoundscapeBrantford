@@ -80,6 +80,7 @@
             /* Text shadow removed as requested */
         }
 
+        /* Section titles */
         .section-title {
             letter-spacing: -0.03em;
             /* USER REQUEST: Add text shadow to section titles */
@@ -217,8 +218,8 @@
         </div>
     </nav>
     
-    <!-- Universal Control Overlay: Y: top-40%, X: left-12 (48px) -->
-    <div id="universal-overlay" class="fixed top-[40%] left-12 transform -translate-y-1/2 transition-opacity duration-500 z-40 opacity-0 pointer-events-none">
+    <!-- Universal Control Overlay: Y: top-1/2 (50%), X: left-12 (48px) -->
+    <div id="universal-overlay" class="fixed top-1/2 left-12 transform -translate-y-1/2 transition-opacity duration-500 z-40 opacity-0 pointer-events-none">
         <!-- NEW: Circle Blurry Background Wrapper -->
         <div class="p-8 rounded-full bg-black/50 backdrop-blur-md border border-white/10 shadow-2xl pointer-events-auto">
             <!-- Updated Layout: 5 icons vertically (Vol+, Prev, Play/Pause, Next, Vol-) -->
@@ -433,12 +434,14 @@
 
     // AUDIO MANAGER (FIXED)
     const AudioManager = {
+        trackList: [
+            'https://fuzzy-scarlet-m7gimsnfzq-epxr39fr6k.edgeone.dev/jazz-background-music-333352.mp3',
+            'https://tiny-azure-anfm7n7rnu-nemfftrw99.edgeone.dev/jazz-background-music-338663.mp3',
+            'https://convincing-crimson-owffapndzq-dczemnx44v.edgeone.dev/jazz-background-music-379027.mp3'
+        ],
+        currentTrackIndex: 0,
+        audioElement: null,
         sources: {
-            // UPDATED JAZZ MUSIC SOURCES
-            music: new Audio('https://fuzzy-scarlet-m7gimsnfzq-epxr39fr6k.edgeone.dev/jazz-background-music-333352.mp3'),
-            music_fallback_1: 'https://tiny-azure-anfm7n7rnu-nemfftrw99.edgeone.dev/jazz-background-music-338663.mp3',
-            music_fallback_2: 'https://convincing-crimson-owffapndzq-dczemnx44v.edgeone.dev/jazz-background-music-379027.mp3',
-            // Recording Beep Sound Effect
             recordBeep: new Audio('https://actions.google.com/sounds/v1/alarms/beep_short.ogg')
         },
         current: null,
@@ -448,13 +451,42 @@
         hasInteracted: false,
 
         init() {
-            // Set loops and initial volume
-            this.sources.music.loop = true;
-            this.sources.music.volume = 0.5;
+            this.audioElement = new Audio();
+            this.audioElement.loop = true;
+            this.audioElement.volume = 0.5;
             this.sources.recordBeep.volume = 0.7;
             
-            // FIX: Explicitly load audio elements to ensure they are ready.
-            this.sources.music.load();
+            this.loadTrack(this.currentTrackIndex);
+        },
+
+        loadTrack(index) {
+            this.currentTrackIndex = (index % this.trackList.length + this.trackList.length) % this.trackList.length;
+            this.audioElement.src = this.trackList[this.currentTrackIndex];
+            this.audioElement.load();
+            if (isPlaying && this.hasInteracted) {
+                 // Try to resume play if the user hasn't explicitly paused
+                 this.audioElement.play().catch(e => console.log("Track resume failed after source change."));
+            }
+        },
+
+        playNextTrack() {
+            this.loadTrack(this.currentTrackIndex + 1);
+            showMessage(`Next Track: Playing Track ${this.currentTrackIndex + 1}`, 2000);
+        },
+
+        playPrevTrack() {
+            this.loadTrack(this.currentTrackIndex - 1);
+            showMessage(`Previous Track: Playing Track ${this.currentTrackIndex + 1}`, 2000);
+        },
+
+        volumeUp() {
+            this.audioElement.volume = Math.min(1.0, this.audioElement.volume + 0.1);
+            showMessage(`Volume: ${Math.round(this.audioElement.volume * 100)}%`, 1000);
+        },
+
+        volumeDown() {
+            this.audioElement.volume = Math.max(0.0, this.audioElement.volume - 0.1);
+            showMessage(`Volume: ${Math.round(this.audioElement.volume * 100)}%`, 1000);
         },
 
         startBackground() {
@@ -465,38 +497,36 @@
             }
         },
 
-        // New function to only stop background music for clean toggle
         stopBackgroundMusic() {
-            this.sources.music.pause();
+            this.audioElement.pause();
             isPlaying = false;
             updatePlayPauseIcon(isPlaying);
         },
 
         stopAll() {
             // Stop all current playback (music and TTS)
-            this.sources.music.pause();
+            this.audioElement.pause();
             window.speechSynthesis.cancel();
             this.current = null;
             isPlaying = false;
             updatePlayPauseIcon(isPlaying);
         },
 
-        // UPDATED: Functionality to handle exclusive audio playback (only one function's audio should be active)
         play(type) {
             if(this.isRecording) return;
             
             // Handle background music play/resume logic
             if (type === 'music') {
                  // NEW MUSIC LOGIC: If music is already playing, do nothing
-                 if (this.current === 'music' && !this.sources.music.paused) return; 
+                 if (this.current === 'music' && !this.audioElement.paused) return; 
                  
                  // If TTS/Story/Info is active, stop it immediately.
                  if (this.current === 'story' || this.current === 'info') {
                      window.speechSynthesis.cancel();
                  }
 
-                 this.sources.music.currentTime = 0; 
-                 this.sources.music.play().catch(e => {
+                 this.audioElement.currentTime = 0; 
+                 this.audioElement.play().catch(e => {
                      console.error("Audio play failed for Background Music:", e);
                      showMessage("Audio playback restricted. Please ensure you have interacted with the page.", 6000);
                  }); 
@@ -540,11 +570,11 @@
                 }
                 this.isRecording = false;
                 onStop(); // Red dot to black
-                this.play('music'); // Music continues
+                this.play('music'); // **Music continues**
                 console.log("Recording stopped. Music resumed.");
             } else {
                 // START RECORDING
-                this.stopAll(); // Pause all other audio
+                this.stopAll(); // **Pause all other audio (including music)**
                 this.sources.recordBeep.currentTime = 0;
                 this.sources.recordBeep.play(); // Play SFX before mic request
 
@@ -818,43 +848,47 @@
 
             if (intersects.length > 0) {
                 let interactiveElement = intersects[0].object;
+                
+                // Get the intersection point in the object's local space for accurate quadrant detection
+                const intersection = intersects[0];
+                const localPoint = intersection.point.clone();
+                interactiveElement.worldToLocal(localPoint);
+
+                // Check if the click occurred on the 3D dial rim
                 if (interactiveElement.parent && interactiveElement.parent.name === 'VOLUME_DIAL_RIM') {
-                    interactiveElement = interactiveElement.parent;
-                } else if (interactiveElement.name === 'MUSIC_BUTTON' || interactiveElement.name === 'STORY_BUTTON' || interactiveElement.name === 'CITY_INFO_BUTTON' || interactiveElement.name === 'RECORD_BUTTON') {
-                    // Use the mesh itself
-                } else if (interactiveElement.name !== 'PLAY_PAUSE_BUTTON' && interactiveElement.name !== 'RESTART_BUTTON') {
-                    // Check if a child of a clickable object was hit (e.g., a detail inside a dial component)
-                    let parent = intersects[0].object.parent;
-                    while (parent) {
-                        if (parent.name && clickableObjects.some(obj => obj.uuid === parent.uuid)) {
-                            interactiveElement = parent;
-                            break;
+                    // Click was on the rim component (dish or slope), use its parent group for interaction
+                    const dialCenter = new THREE.Vector3(0, 0, 0); // Dial center in dialGroup local space
+                    const relativeX = localPoint.x - dialCenter.x;
+                    const relativeY = localPoint.y - dialCenter.y;
+
+                    // Quadrant Detection based on local point coordinates:
+                    const isHorizontal = Math.abs(relativeX) > Math.abs(relativeY);
+                    
+                    if (isHorizontal) {
+                        if (relativeX > 0) {
+                            AudioManager.playNextTrack(); // Right
+                        } else {
+                            AudioManager.playPrevTrack(); // Left
                         }
-                        parent = parent.parent;
+                    } else {
+                        if (relativeY > 0) {
+                            AudioManager.volumeUp(); // Top
+                        } else {
+                            AudioManager.volumeDown(); // Bottom
+                        }
                     }
-                }
+
+                    // Treat the rim group itself as the interactive element for visual feedback
+                    interactiveElement = interactiveElement.parent;
+                } 
                 
-                const originalZ = interactiveElement.position.z;
-                const originalY = interactiveElement.position.y;
-                const originalScale = interactiveElement.scale.clone();
-                let momentaryMaterial = matGrayPress;
-
-                // 1. Visual Press (Momentary)
-                if (interactiveElement.name === 'VOLUME_DIAL_RIM') {
-                    interactiveElement.children.forEach(child => child.material = momentaryMaterial);
-                }
-                
-                // Apply momentary material to all functional buttons
-                if (['MUSIC_BUTTON', 'STORY_BUTTON', 'CITY_INFO_BUTTON', 'RECORD_BUTTON'].includes(interactiveElement.name)) {
-                    interactiveElement.material = momentaryMaterial;
+                // Check if the click was on the central play/pause button
+                else if (interactiveElement.name === 'PLAY_PAUSE_BUTTON') {
+                    toggleAudioPlayback();
                 }
 
-                if (interactiveElement.name === 'RESTART_BUTTON') interactiveElement.position.y += 0.01;
-                else interactiveElement.position.z -= 0.01;
-                interactiveElement.scale.set(0.98, 0.98, 0.98);
-
-                // 2. Audio Logic
-                if (interactiveElement.name === 'MUSIC_BUTTON') AudioManager.play('music');
+                // Handle core buttons or special buttons
+                else if (interactiveElement.name === 'MUSIC_BUTTON') AudioManager.play('music');
                 else if (interactiveElement.name === 'STORY_BUTTON') AudioManager.play('story');
                 else if (interactiveElement.name === 'CITY_INFO_BUTTON') AudioManager.play('info');
                 else if (interactiveElement.name === 'RECORD_BUTTON') {
@@ -869,14 +903,28 @@
                             redDotLED.material = matBlackDot; 
                         } 
                     );
-                } 
-                // CHANGE: Tactile dial now toggles play/pause
-                else if (interactiveElement.name === 'PLAY_PAUSE_BUTTON' || interactiveElement.name === 'VOLUME_DIAL_RIM') {
-                    toggleAudioPlayback();
-                }
-                else if (interactiveElement.name === 'RESTART_BUTTON') {
+                } else if (interactiveElement.name === 'RESTART_BUTTON') {
                     location.reload();
                 }
+
+                // Apply visual press for all interactive elements (dial rim is handled above)
+                const originalZ = interactiveElement.position.z;
+                const originalY = interactiveElement.position.y;
+                const originalScale = interactiveElement.scale.clone();
+                let momentaryMaterial = matGrayPress;
+
+                if (interactiveElement.name === 'VOLUME_DIAL_RIM') {
+                    interactiveElement.children.forEach(child => child.material = momentaryMaterial);
+                }
+                
+                // Apply momentary material to all functional buttons
+                if (['MUSIC_BUTTON', 'STORY_BUTTON', 'CITY_INFO_BUTTON', 'RECORD_BUTTON'].includes(interactiveElement.name)) {
+                    interactiveElement.material = momentaryMaterial;
+                }
+
+                if (interactiveElement.name === 'RESTART_BUTTON') interactiveElement.position.y += 0.01;
+                else interactiveElement.position.z -= 0.01;
+                interactiveElement.scale.set(0.98, 0.98, 0.98);
 
                 // 3. Release (Revert)
                 setTimeout(() => {
@@ -886,6 +934,7 @@
                     
                     // Revert Materials
                     if (interactiveElement.name === 'VOLUME_DIAL_RIM') {
+                        // Revert children materials back to black
                         interactiveElement.children.forEach(child => child.material = matBlack);
                     } else if (interactiveElement.name !== 'PLAY_PAUSE_BUTTON') {
                         interactiveElement.material = interactiveElement.userData.originalMat || matBlack;
@@ -1012,11 +1061,11 @@
         // The new overlay play/pause button uses the same logic as the 3D dial
         document.getElementById('btn-play-pause-overlay')?.addEventListener('click', toggleAudioPlayback);
 
-        // Mock Volume/Track controls
-        document.getElementById('btn-prev')?.addEventListener('click', () => showMessage('Previous Track requested.', 2000));
-        document.getElementById('btn-next')?.addEventListener('click', () => showMessage('Next Track requested.', 2000));
-        document.getElementById('btn-vol-up')?.addEventListener('click', () => showMessage('Volume Up requested. (Audio Manager updated)', 2000));
-        document.getElementById('btn-vol-down')?.addEventListener('click', () => showMessage('Volume Down requested. (Audio Manager updated)', 2000));
+        // Mock Volume/Track controls for overlay buttons
+        document.getElementById('btn-prev')?.addEventListener('click', () => AudioManager.playPrevTrack());
+        document.getElementById('btn-next')?.addEventListener('click', () => AudioManager.playNextTrack());
+        document.getElementById('btn-vol-up')?.addEventListener('click', () => AudioManager.volumeUp());
+        document.getElementById('btn-vol-down')?.addEventListener('click', () => AudioManager.volumeDown());
     })();
     </script>
 </body>
