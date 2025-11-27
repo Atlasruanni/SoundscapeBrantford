@@ -218,43 +218,6 @@
         </div>
     </nav>
     
-    <!-- Universal Control Overlay: Y: top-1/2 (50%), X: left-12 (48px) -->
-    <!-- UPDATED: Fixed position to relative position under the card -->
-    <!-- NOTE: This overlay is now FIXED to be placed near the bottom-left of the card area when 'universal' is active. -->
-    <div id="universal-overlay" class="fixed top-[65vh] right-1/2 transform translate-x-[150px] md:translate-x-[240px] max-w-sm transition-opacity duration-500 z-40 opacity-0 pointer-events-none">
-        <!-- The overlay card now mimics the glass-card properties for size/curve match -->
-        <div id="overlay-controls-container" class="glass-card p-4 pointer-events-auto w-full">
-            <!-- Updated Layout: Horizontal row of smaller icons -->
-            <div id="overlay-controls" class="flex justify-around items-center space-x-2 text-white">
-                
-                <!-- Vol Up (Plus Icon) -->
-                <button id="btn-vol-up" class="w-12 h-12 p-2 rounded-full hover:bg-white/20 transition duration-200" title="Volume Up">
-                     <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14"/><path d="M5 12h14"/></svg>
-                </button>
-
-                <!-- Last Track (Prev) -->
-                <button id="btn-prev" class="w-12 h-12 p-2 rounded-full hover:bg-white/20 transition duration-200" title="Previous Track">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="19 20 9 12 19 4 19 20"/><line x1="5" x2="5" y1="19" y2="5"/></svg>
-                </button>
-                
-                <!-- Play/Pause Toggle -->
-                <button id="btn-play-pause-overlay" class="w-12 h-12 p-2 rounded-full hover:bg-white/20 transition duration-200" title="Play/Pause">
-                    <svg id="play-pause-icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="currentColor" class="text-yellow-500"><path d="M3 22v-20l18 10-18 10z"/></svg>
-                </button>
-
-                <!-- Next Track -->
-                <button id="btn-next" class="w-12 h-12 p-2 rounded-full hover:bg-white/20 transition duration-200" title="Next Track">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 4 15 12 5 20 5 4"/><line x1="19" x2="19" y1="5" y2="19"/></svg>
-                </button>
-
-                <!-- Vol Down (Minus Icon) -->
-                <button id="btn-vol-down" class="w-12 h-12 p-2 rounded-full hover:bg-white/20 transition duration-200" title="Volume Down">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" x2="19" y1="12" y2="12"/></svg>
-                </button>
-            </div>
-        </div>
-    </div>
-
     <!-- System Restart Overlay: Y: bottom-40, X: left-1/2 (50%) -->
     <div id="maintenance-overlay" class="fixed bottom-40 left-1/2 transform -translate-x-1/2 p-3 rounded-xl bg-red-900/10 border-red-500/20 transition-opacity duration-500 z-40 opacity-0 pointer-events-none">
         <button id="btn-restart-overlay" class="p-3 rounded-full bg-red-600 hover:bg-red-500 transition duration-200 text-white font-bold text-sm pointer-events-auto flex items-center gap-2" title="System Restart">
@@ -349,38 +312,38 @@
                     A single, intuitive dial controls volume and playback using globally recognized symbols.
                     <span class="text-white block mt-2 font-medium">The central green light pulses to represent battery life and active device status.</span>
                 </p>
-            </div>
-            
-            <!-- Universal Control Overlay: Now positioned below the card, horizontal, and inheriting glass-card style -->
-            <div id="universal-overlay" class="fixed right-1/2 top-[65vh] transform translate-x-[150px] md:translate-x-[240px] max-w-sm transition-opacity duration-500 z-40 opacity-0 pointer-events-none">
-                <div id="overlay-controls-container" class="glass-card p-4 pointer-events-auto w-full">
-                    <!-- Horizontal Layout of Controls -->
-                    <div id="overlay-controls" class="flex justify-around items-center space-x-2 text-white">
-                        
-                        <!-- Vol Up (Plus Icon) -->
-                        <button id="btn-vol-up" class="w-12 h-12 p-2 rounded-full hover:bg-white/20 transition duration-200" title="Volume Up">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14"/><path d="M5 12h14"/></svg>
-                        </button>
+                
+                <!-- Universal Control Overlay: Now INSIDE the card, centered below the text content -->
+                <div id="universal-overlay" class="mt-8 transition-opacity duration-500">
+                    <div id="overlay-controls-container" class="glass-card p-4 pointer-events-auto w-full mx-auto" style="border-radius: 30px; border: none; background: rgba(0,0,0,0.3); backdrop-filter: blur(15px);">
+                        <!-- Horizontal Layout of Controls -->
+                        <div id="overlay-controls" class="flex justify-around items-center space-x-2 text-white">
+                            
+                            <!-- Vol Up (Plus Icon) -->
+                            <button id="btn-vol-up" class="w-12 h-12 p-2 rounded-full hover:bg-white/20 transition duration-200" title="Volume Up">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14"/><path d="M5 12h14"/></svg>
+                            </button>
 
-                        <!-- Last Track (Prev) -->
-                        <button id="btn-prev" class="w-12 h-12 p-2 rounded-full hover:bg-white/20 transition duration-200" title="Previous Track">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="19 20 9 12 19 4 19 20"/><line x1="5" x2="5" y1="19" y2="5"/></svg>
-                        </button>
-                        
-                        <!-- Play/Pause Toggle -->
-                        <button id="btn-play-pause-overlay" class="w-12 h-12 p-2 rounded-full hover:bg-white/20 transition duration-200" title="Play/Pause">
-                            <svg id="play-pause-icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="currentColor" class="text-yellow-500"><path d="M3 22v-20l18 10-18 10z"/></svg>
-                        </button>
+                            <!-- Last Track (Prev) -->
+                            <button id="btn-prev" class="w-12 h-12 p-2 rounded-full hover:bg-white/20 transition duration-200" title="Previous Track">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="19 20 9 12 19 4 19 20"/><line x1="5" x2="5" y1="19" y2="5"/></svg>
+                            </button>
+                            
+                            <!-- Play/Pause Toggle -->
+                            <button id="btn-play-pause-overlay" class="w-12 h-12 p-2 rounded-full hover:bg-white/20 transition duration-200" title="Play/Pause">
+                                <svg id="play-pause-icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="currentColor" class="text-yellow-500"><path d="M3 22v-20l18 10-18 10z"/></svg>
+                            </button>
 
-                        <!-- Next Track -->
-                        <button id="btn-next" class="w-12 h-12 p-2 rounded-full hover:bg-white/20 transition duration-200" title="Next Track">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 4 15 12 5 20 5 4"/><line x1="19" x2="19" y1="5" y2="19"/></svg>
-                        </button>
+                            <!-- Next Track -->
+                            <button id="btn-next" class="w-12 h-12 p-2 rounded-full hover:bg-white/20 transition duration-200" title="Next Track">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 4 15 12 5 20 5 4"/><line x1="19" x2="19" y1="5" y2="19"/></svg>
+                            </button>
 
-                        <!-- Vol Down (Minus Icon) -->
-                        <button id="btn-vol-down" class="w-12 h-12 p-2 rounded-full hover:bg-white/20 transition duration-200" title="Volume Down">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" x2="19" y1="12" y2="12"/></svg>
-                        </button>
+                            <!-- Vol Down (Minus Icon) -->
+                            <button id="btn-vol-down" class="w-12 h-12 p-2 rounded-full hover:bg-white/20 transition duration-200" title="Volume Down">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" x2="19" y1="12" y2="12"/></svg>
+                            </button>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -895,14 +858,16 @@
 
                 // Check if the click occurred on the 3D dial rim
                 if (interactiveElement.parent && interactiveElement.parent.name === 'VOLUME_DIAL_RIM') {
-                    // Click was on the rim component (dish or slope), use its parent group for interaction
+                    // Treat the rim group itself as the interactive element for visual feedback
+                    interactiveElement = interactiveElement.parent;
+                    
                     const dialCenter = new THREE.Vector3(0, 0, 0); // Dial center in dialGroup local space
                     const relativeX = localPoint.x - dialCenter.x;
                     const relativeY = localPoint.y - dialCenter.y;
-
-                    // Quadrant Detection based on local point coordinates:
-                    const isHorizontal = Math.abs(relativeX) > Math.abs(relativeY);
                     
+                    // Use a stronger vertical bias to ensure the bottom quadrant is easily clickable
+                    const isHorizontal = Math.abs(relativeX) > Math.abs(relativeY) * 0.7; // Reduced sensitivity for X axis
+
                     if (isHorizontal) {
                         if (relativeX > 0) {
                             AudioManager.playNextTrack(); // Right
@@ -910,15 +875,13 @@
                             AudioManager.playPrevTrack(); // Left
                         }
                     } else {
+                        // Vertical checks (Top/Bottom)
                         if (relativeY > 0) {
                             AudioManager.volumeUp(); // Top
                         } else {
-                            AudioManager.volumeDown(); // Bottom
+                            AudioManager.volumeDown(); // Bottom (Fix applied here via better sensitivity)
                         }
                     }
-
-                    // Treat the rim group itself as the interactive element for visual feedback
-                    interactiveElement = interactiveElement.parent;
                 } 
                 
                 // Check if the click was on the central play/pause button
@@ -1010,15 +973,20 @@
             const universalOverlay = document.getElementById('universal-overlay');
             const maintenanceOverlay = document.getElementById('maintenance-overlay');
             
+            // Overlay now relies on parent element's fade-in/out via CSS classes
             if (universalOverlay) {
-                if (currentSection === 'universal') {
+                 // Check if parent (fade-in-section) is visible. 
+                 // If not, we set opacity to 0 and disable pointer events
+                 const isUniversalSectionVisible = document.getElementById('universal').querySelector('.fade-in-section.is-visible');
+                 if (isUniversalSectionVisible) {
                     universalOverlay.style.opacity = 1;
                     universalOverlay.style.pointerEvents = 'auto';
-                } else {
+                 } else {
                     universalOverlay.style.opacity = 0;
                     universalOverlay.style.pointerEvents = 'none';
-                }
+                 }
             }
+
 
             if (maintenanceOverlay) {
                 if (currentSection === 'specs') {
