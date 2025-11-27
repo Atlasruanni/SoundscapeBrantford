@@ -7,27 +7,22 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     
-    <!-- POST-PROCESSING SCRIPTS for Bloom/Glow Effect (Essential for premium look) -->
-    <!-- Essential Libraries: Composer, RenderPass, ShaderPass -->
+    <!-- POST-PROCESSING SCRIPTS -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/examples/js/postprocessing/EffectComposer.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/examples/js/postprocessing/RenderPass.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/examples/js/postprocessing/ShaderPass.js"></script>
-    
-    <!-- Shaders must be loaded before the Passes that use them -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/examples/js/shaders/CopyShader.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/examples/js/shaders/LuminosityShader.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/examples/js/postprocessing/LuminosityHighPassShader.js"></script>
-    
-    <!-- The main bloom pass -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/examples/js/postprocessing/UnrealBloomPass.js"></script>
     
     <!-- Google Fonts -->
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <style>
         body { 
             font-family: 'Inter', sans-serif; 
             overflow-x: hidden; 
-            background-color: #080808; 
+            background-color: #000000; 
             color: #f5f5f7;
         }
         
@@ -43,7 +38,6 @@
             height: 100vh;
             z-index: 1;
             outline: none;
-            /* CRITICAL: Enable pointer events on the canvas for raycasting */
             pointer-events: auto; 
         }
 
@@ -54,19 +48,42 @@
             min-height: 100vh;
             display: flex;
             align-items: center;
-            pointer-events: none;
+            pointer-events: none; /* Let clicks pass through to canvas by default */
         }
         
-        /* Glass UI */
-        .content-box {
-            pointer-events: auto;
-            background: rgba(18, 18, 20, 0.75);
-            backdrop-filter: blur(24px);
-            -webkit-backdrop-filter: blur(24px);
-            border-radius: 24px;
-            padding: 2.5rem;
-            border: 1px solid rgba(255, 255, 255, 0.08);
-            box-shadow: 0 24px 48px -12px rgba(0,0,0,0.6);
+        /* Apple-esque Glass Card */
+        .glass-card {
+            pointer-events: auto; /* Enable interaction with cards */
+            background: rgba(28, 28, 30, 0.6);
+            backdrop-filter: blur(30px);
+            -webkit-backdrop-filter: blur(30px);
+            border-radius: 30px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            transition: transform 0.3s ease, background 0.3s ease;
+        }
+        
+        .glass-card:hover {
+            background: rgba(44, 44, 46, 0.7);
+            border-color: rgba(255, 255, 255, 0.2);
+        }
+
+        /* Typography Enhancements */
+        .hero-title {
+            background: linear-gradient(180deg, #FFFFFF 0%, #888888 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            letter-spacing: -0.05em;
+        }
+
+        .section-title {
+            letter-spacing: -0.03em;
+        }
+
+        /* Grid Layouts */
+        .bento-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 1rem;
         }
 
         .scroll-indicator {
@@ -74,29 +91,20 @@
             bottom: 2rem;
             left: 50%;
             transform: translateX(-50%);
-            animation: bounce 2s infinite;
+            animation: pulse 2s infinite;
             opacity: 0.5;
         }
 
-        @keyframes bounce {
-            0%, 20%, 50%, 80%, 100% {transform: translateX(-50%) translateY(0);}
-            40% {transform: translateX(-50%) translateY(-10px);}
-            60% {transform: translateX(-50%) translateY(-5px);}
-        }
-
-        /* Spec Grid */
-        .spec-item {
-            background: rgba(255,255,255,0.03);
-            padding: 1.25rem;
-            border-radius: 12px;
-            text-align: center;
-            border: 1px solid rgba(255,255,255,0.05);
+        @keyframes pulse {
+            0% { opacity: 0.3; transform: translateX(-50%) scale(0.95); }
+            50% { opacity: 0.7; transform: translateX(-50%) scale(1); }
+            100% { opacity: 0.3; transform: translateX(-50%) scale(0.95); }
         }
 
         .loader {
             position: fixed;
             top:0; left:0; width:100%; height:100%;
-            background: #080808;
+            background: #000000;
             z-index: 9999;
             display: flex;
             justify-content: center;
@@ -104,21 +112,41 @@
             transition: opacity 0.5s;
         }
         
+        /* Navigation Blur */
+        nav {
+            background: rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+        }
+
         .nav-link {
             position: relative;
-            color: #888;
+            color: #86868b;
             transition: color 0.3s;
+            font-size: 12px;
         }
         .nav-link:hover { color: #fff; }
+
+        /* Fade In Animation for text */
+        .fade-in-section {
+            opacity: 0;
+            transform: translateY(20px);
+            transition: opacity 0.8s ease-out, transform 0.8s ease-out;
+        }
+        .fade-in-section.is-visible {
+            opacity: 1;
+            transform: none;
+        }
     </style>
 </head>
-<body class="text-slate-200">
+<body class="text-slate-200 antialiased">
 
     <!-- Loader -->
     <div id="loader" class="loader">
         <div class="flex flex-col items-center">
             <div class="animate-spin rounded-full h-8 w-8 border-t-2 border-r-2 border-yellow-500 mb-4"></div>
-            <p class="text-[10px] font-bold tracking-[0.3em] text-zinc-600 uppercase">Generating Geometry</p>
+            <p class="text-[10px] font-bold tracking-[0.3em] text-zinc-500 uppercase">Loading Experience</p>
         </div>
     </div>
 
@@ -126,155 +154,216 @@
     <div id="canvas-container"></div>
 
     <!-- Navigation -->
-    <nav class="fixed top-0 w-full z-50 px-8 py-6 flex justify-between items-center pointer-events-none mix-blend-difference text-white">
-        <div class="text-lg font-bold tracking-tighter pointer-events-auto">
-            BRANTFORD.<span class="text-yellow-400">MIX</span>
+    <nav class="fixed top-0 w-full z-50 px-6 md:px-12 py-4 flex justify-between items-center pointer-events-auto">
+        <div class="text-lg font-bold tracking-tighter text-white">
+            BRANTFORD.<span class="text-yellow-500">MIX</span>
         </div>
-        <div class="hidden md:flex gap-8 text-xs font-semibold uppercase tracking-widest pointer-events-auto">
-            <a href="#front" class="nav-link">Front</a>
-            <a href="#interface" class="nav-link">Interface</a>
-            <a href="#details" class="nav-link">Details</a>
-            <a href="#specs" class="nav-link">Specs</a>
+        <div class="hidden md:flex gap-8 font-medium">
+            <a href="#front" class="nav-link">Overview</a>
+            <a href="#functional" class="nav-link">Features</a>
+            <a href="#universal" class="nav-link">Controls</a>
+            <a href="#specs" class="nav-link">Tech Specs</a>
         </div>
     </nav>
 
-    <!-- Section 1: Front Calibration -->
+    <!-- Section 1: Hero / Overview -->
     <section id="front" class="content-section justify-center text-center px-6">
-        <div class="content-box max-w-2xl transform translate-y-32 md:translate-y-48">
-            <div class="flex justify-center gap-3 mb-6">
-                <span class="bg-yellow-500/20 text-yellow-400 border border-yellow-500/30 px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest">SoundScape Mixer | Model 2.0</span>
-            </div>
-            <h1 class="text-4xl md:text-6xl font-bold mb-4 text-white tracking-tight">
-                Spatial Audio Calibration.
+        <div class="fade-in-section max-w-4xl mx-auto mt-[40vh] md:mt-[35vh]">
+            <span class="inline-block py-1 px-3 rounded-full border border-yellow-500/30 bg-yellow-500/10 text-yellow-500 text-[10px] font-bold tracking-widest uppercase mb-6">
+                Model 2.0
+            </span>
+            <h1 class="hero-title text-5xl md:text-8xl font-bold mb-6">
+                Public Safety.<br>Reimagined.
             </h1>
-            <p class="text-zinc-400 text-sm md:text-base max-w-md mx-auto leading-relaxed">
-                Interact with the device to control audio layers and frequency modulation for the Brantford Soundscape.
+            <p class="text-zinc-400 text-lg md:text-xl max-w-2xl mx-auto leading-relaxed font-light">
+                An interactive audio experience designed to enhance community connection and deliver real-time information to Brantford.
             </p>
         </div>
-        <div class="scroll-indicator text-zinc-600 text-[0.2em] uppercase">Scroll to Interact</div>
+        <div class="scroll-indicator text-zinc-500 text-xs font-medium tracking-widest uppercase">Scroll</div>
     </section>
 
-    <!-- Section 2: Interface -->
-    <section id="interface" class="content-section justify-start px-6 md:px-24">
-        <div class="content-box max-w-sm">
-            <h2 class="text-2xl font-bold mb-4 text-white">Multi-Layer Input Matrix.</h2>
-            <p class="text-zinc-400 text-sm leading-relaxed mb-6">
-                The four input keys allow toggling between different sound layers (e.g., River, City Ambient, Forest). The steel key toggles master activation.
-            </p>
-            <div class="flex items-center gap-4 text-xs font-mono text-zinc-500">
-                <div class="h-px bg-zinc-700 w-8"></div>
-                <span>Layer_Matrix_4x1</span>
+    <!-- Section 2: Functional Keys (Bento Grid Layout) -->
+    <section id="functional" class="content-section justify-start px-6 md:px-24">
+        <div class="fade-in-section w-full max-w-md">
+            <h2 class="section-title text-4xl font-bold mb-8 text-white">Core Functions.</h2>
+            
+            <div class="bento-grid">
+                <!-- Music -->
+                <div class="glass-card p-6 flex flex-col justify-between h-40">
+                    <div class="text-yellow-400 mb-2">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3" /></svg>
+                    </div>
+                    <div>
+                        <h3 class="text-white font-semibold text-sm mb-1">Music</h3>
+                        <p class="text-zinc-400 text-xs leading-snug">Curated, calming soundscapes for safer streets.</p>
+                    </div>
+                </div>
+
+                <!-- Story -->
+                <div class="glass-card p-6 flex flex-col justify-between h-40">
+                     <div class="text-yellow-400 mb-2">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" /></svg>
+                    </div>
+                    <div>
+                        <h3 class="text-white font-semibold text-sm mb-1">Story</h3>
+                        <p class="text-zinc-400 text-xs leading-snug">Local history and culture fostering connection.</p>
+                    </div>
+                </div>
+
+                <!-- City Info -->
+                <div class="glass-card p-6 flex flex-col justify-between h-40">
+                     <div class="text-yellow-400 mb-2">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                    </div>
+                    <div>
+                        <h3 class="text-white font-semibold text-sm mb-1">City Info</h3>
+                        <p class="text-zinc-400 text-xs leading-snug">AI-powered updates on weather & events.</p>
+                    </div>
+                </div>
+
+                <!-- Record -->
+                <div class="glass-card p-6 flex flex-col justify-between h-40 bg-zinc-800/80 border-zinc-600/30">
+                     <div class="text-red-500 mb-2 animate-pulse">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="currentColor" viewBox="0 0 24 24"><circle cx="12" cy="12" r="6" /></svg>
+                    </div>
+                    <div>
+                        <h3 class="text-white font-semibold text-sm mb-1">Record</h3>
+                        <p class="text-zinc-400 text-xs leading-snug">Leave feedback or messages for the community.</p>
+                    </div>
+                </div>
             </div>
         </div>
     </section>
 
-    <!-- Section 3: Dial & Material -->
-    <section id="details" class="content-section justify-end px-6 md:px-24">
-        <div class="content-box max-w-sm">
-            <h2 class="text-2xl font-bold mb-4 text-white">Spatial Frequency Dial.</h2>
-            <p class="text-zinc-400 text-sm leading-relaxed mb-6">
-                The center dial controls the frequency filter. Click the center pad to reset the phase. The outer rim controls master volume.
-            </p>
-             <div class="flex items-center gap-4 text-xs font-mono text-zinc-500">
-                <div class="h-px bg-zinc-700 w-8"></div>
-                <span>Frequency_Control_01</span>
+    <!-- Section 3: Universal Controls -->
+    <section id="universal" class="content-section justify-end px-6 md:px-24">
+        <div class="fade-in-section w-full max-w-sm text-right">
+            <h2 class="section-title text-4xl font-bold mb-6 text-white">Universal Control.</h2>
+            <div class="glass-card p-8 inline-block text-left w-full">
+                <div class="flex items-center gap-4 mb-4">
+                    <div class="w-12 h-12 rounded-full bg-yellow-500/20 flex items-center justify-center text-yellow-400">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z" /></svg>
+                    </div>
+                    <div>
+                        <h3 class="text-lg font-bold text-white">Tactile Dial</h3>
+                        <p class="text-xs text-zinc-500 uppercase tracking-widest">Interface</p>
+                    </div>
+                </div>
+                <p class="text-zinc-300 text-sm leading-relaxed">
+                    A single, intuitive dial controls volume and playback using globally recognized symbols. Designed for universal accessibility without language barriers.
+                </p>
             </div>
         </div>
     </section>
 
-    <!-- Section 4: Specs -->
-    <section id="specs" class="content-section min-h-screen items-start justify-center px-6 pt-32">
-        <div class="w-full max-w-4xl grid md:grid-cols-3 gap-6">
-            <div class="spec-item col-span-1 md:col-span-3 bg-gradient-to-r from-zinc-900 to-zinc-800 border-none">
-                <h3 class="text-yellow-400 text-xs font-bold uppercase tracking-widest mb-2">Acoustic Response Profile</h3>
-                <div class="text-white text-2xl font-mono">BRANTFORD MIX V1.0</div>
-            </div>
-            <div class="spec-item">
-                <h3 class="text-zinc-500 text-[10px] uppercase tracking-widest mb-2">Dimensions</h3>
-                <!-- NOTE: The physical dimensions displayed here (120mm x 52mm) 
-                     are placeholders and do not reflect the current Three.js unit size (5.75 x 2.2). -->
-                <div class="text-white font-medium">120mm x 52mm</div> 
-            </div>
-            <div class="spec-item">
-                <h3 class="text-zinc-500 text-[10px] uppercase tracking-widest mb-2">Material</h3>
-                <div class="text-white font-medium">Polycarbonate</div>
-            </div>
-            <div class="spec-item">
-                <h3 class="text-zinc-500 text-[10px] uppercase tracking-widest mb-2">Interface</h3>
-                <div class="text-white font-medium">Hybrid Tactile</div>
+    <!-- Section 4: Specs & Maintenance (Grid Layout) -->
+    <section id="specs" class="content-section min-h-screen flex flex-col justify-center items-center px-6 py-24">
+        
+        <!-- Maintenance Alert Style -->
+        <div class="fade-in-section w-full max-w-3xl mb-12">
+            <div class="glass-card p-1 flex items-center gap-4 bg-red-900/10 border-red-500/20">
+                <div class="bg-red-500/10 p-4 h-full flex items-center rounded-l-[28px]">
+                    <span class="text-red-500 font-bold text-xs uppercase tracking-wider rotate-180" style="writing-mode: vertical-rl;">Admin</span>
+                </div>
+                <div class="py-4 pr-6">
+                    <h3 class="text-white font-bold text-lg">Maintenance Access</h3>
+                    <p class="text-zinc-400 text-sm mt-1">
+                        The <span class="text-red-400">Restart Button</span> is concealed on the bottom face, accessible only to City staff for secure resetting and diagnostics.
+                    </p>
+                </div>
             </div>
         </div>
+
+        <!-- Tech Specs Grid -->
+        <div class="fade-in-section w-full max-w-4xl grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div class="glass-card p-6 flex flex-col justify-center text-center col-span-2 md:col-span-2">
+                <p class="text-zinc-500 text-xs font-bold uppercase tracking-widest mb-2">Device Name</p>
+                <p class="text-2xl md:text-3xl font-bold text-white tracking-tight">BRANTFORD MIX</p>
+            </div>
+            <div class="glass-card p-6 flex flex-col justify-center text-center">
+                <p class="text-zinc-500 text-xs font-bold uppercase tracking-widest mb-2">Material</p>
+                <p class="text-white font-medium">Reinforced<br>Polycarbonate</p>
+            </div>
+             <div class="glass-card p-6 flex flex-col justify-center text-center">
+                <p class="text-zinc-500 text-xs font-bold uppercase tracking-widest mb-2">Intelligence</p>
+                <p class="text-white font-medium">Real-Time<br>Data Feed</p>
+            </div>
+        </div>
+        
+        <footer class="mt-24 text-zinc-700 text-xs tracking-wider uppercase">
+            Designed for Brantford &copy; 2025
+        </footer>
     </section>
 
     <script>
-    // WRAPPED IN IIFE TO PREVENT VARIABLE REDECLARATION ERRORS
+    // WRAPPED IN IIFE
     (function() {
-        // --- SCENE CONFIGURATION ---
+        // --- SCROLL OBSERVER FOR FADE IN EFFECTS ---
+        const observerOptions = {
+            root: null,
+            rootMargin: '0px',
+            threshold: 0.1
+        };
+
+        const observer = new IntersectionObserver((entries, observer) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.classList.add('is-visible');
+                }
+            });
+        }, observerOptions);
+
+        document.querySelectorAll('.fade-in-section').forEach(section => {
+            observer.observe(section);
+        });
+
+        // --- THREE.JS SCENE CONFIGURATION (UNCHANGED LOGIC) ---
         const container = document.getElementById('canvas-container');
-        // Clear previous canvas if re-running
-        if(container.firstChild) {
-            container.removeChild(container.firstChild);
-        }
+        if(container.firstChild) container.removeChild(container.firstChild);
 
         const scene = new THREE.Scene();
-        scene.background = new THREE.Color(0x080808); 
+        scene.background = new THREE.Color(0x000000); // Pure black for OLED feel
 
         const camera = new THREE.PerspectiveCamera(35, window.innerWidth / window.innerHeight, 0.1, 100);
-        // Initial "Front" view for 1:1 match
         camera.position.set(0, 0, 10); 
         
         const renderer = new THREE.WebGLRenderer({ alpha: false, antialias: true });
         renderer.setSize(window.innerWidth, window.innerHeight);
-        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2)); // Cap pixel ratio for performance
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
         renderer.shadowMap.enabled = true;
         renderer.shadowMap.type = THREE.PCFSoftShadowMap;
         renderer.toneMapping = THREE.ACESFilmicToneMapping;
         renderer.outputEncoding = THREE.sRGBEncoding;
         container.appendChild(renderer.domElement);
         
-        // --- POST-PROCESSING SETUP (REQUIRED FOR SHINE/GLOW EFFECT) ---
-        let composer;
-        let bloomPass;
-        
+        // --- POST-PROCESSING ---
+        let composer, bloomPass;
         function initPostProcessing() {
-            // Check if dependencies loaded successfully (to prevent errors in case of CDN failure)
-            if (typeof THREE.EffectComposer === 'undefined') {
-                return;
-            }
+            if (typeof THREE.EffectComposer === 'undefined') return;
             
             composer = new THREE.EffectComposer(renderer);
             composer.addPass(new THREE.RenderPass(scene, camera));
 
-            // Adjust parameters for a dramatic, high-contrast glow
             bloomPass = new THREE.UnrealBloomPass(
                 new THREE.Vector2(window.innerWidth, window.innerHeight),
-                1.5, // Strength: Increased bloom strength
-                0.3, // Radius
-                0.8  // Threshold
+                1.5, 0.3, 0.8
             );
             composer.addPass(bloomPass);
-            
-            // Set initial size
             composer.setSize(window.innerWidth, window.innerHeight);
         }
         initPostProcessing();
 
-
         // --- INTERACTIVITY SETUP ---
-        let raycaster, mouse;
-        let clickableObjects = []; // Array to store meshes that can be clicked
-        let redDotLED = null; // Global reference for the red dot mesh
+        let raycaster = new THREE.Raycaster();
+        let mouse = new THREE.Vector2();
+        let clickableObjects = [];
+        let redDotLED = null;
 
-        raycaster = new THREE.Raycaster();
-        mouse = new THREE.Vector2();
-
-
-        // --- LIGHTING (Adjusted for Bloom) ---
-        const ambientLight = new THREE.AmbientLight(0xffffff, 0.15); // Reduced ambient light for more drama
+        // --- LIGHTING ---
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.15);
         scene.add(ambientLight);
 
-        // Main Key Light
-        const mainLight = new THREE.DirectionalLight(0xffffff, 1.5); // Increased main light intensity
+        const mainLight = new THREE.DirectionalLight(0xffffff, 1.5);
         mainLight.position.set(5, 5, 10);
         mainLight.castShadow = true;
         mainLight.shadow.bias = -0.0001;
@@ -282,86 +371,25 @@
         mainLight.shadow.mapSize.height = 2048;
         scene.add(mainLight);
 
-        // Rim Light (Top)
-        const topLight = new THREE.SpotLight(0xffffff, 3.0); // Increased rim light intensity
+        const topLight = new THREE.SpotLight(0xffffff, 3.0);
         topLight.position.set(0, 10, 0);
         topLight.lookAt(0,0,0);
         scene.add(topLight);
 
-        // Fill Light (Warmth for the yellow)
         const fillLight = new THREE.PointLight(0xffaa00, 0.4);
         fillLight.position.set(-5, 0, 5);
         scene.add(fillLight);
 
-        // --- MATERIALS ---
-        
-        // 1. EXACT YELLOW BODY
+        // --- MATERIALS (UNCHANGED) ---
         const colorYellow = 0xFFB800; 
-        const matBody = new THREE.MeshPhysicalMaterial({
-            color: colorYellow,
-            roughness: 0.25,
-            metalness: 0.05,
-            clearcoat: 0.2,
-            clearcoatRoughness: 0.1
-        });
-
-        // 2. MATTE BLACK (For Housing/Buttons)
-        const matBlack = new THREE.MeshStandardMaterial({
-            color: 0x111111,
-            roughness: 0.8,
-            metalness: 0.1
-        });
-        
-        // 3. TURQUOISE CENTER (DEFAULT) -> Now GREEN LIT
-        const colorGreen = 0x00A060; // Vibrant Greenish Teal
-        const matCyan = new THREE.MeshPhysicalMaterial({
-            color: colorGreen,
-            roughness: 0.3,
-            metalness: 0.0,
-            emissive: colorGreen, // Added emissive for lit effect
-            emissiveIntensity: 3.0 // Increased intensity to glow under bloom
-        });
-        
-        // 4. ALTERNATE DIAL COLOR (Red/Pink) - Unused, but kept definition clean
-        const colorRedDial = 0xFF0055;
-        const matRedDial = new THREE.MeshPhysicalMaterial({
-            color: colorRedDial,
-            roughness: 0.3,
-            metalness: 0.0,
-            emissive: colorRedDial,
-            emissiveIntensity: 0.1
-        });
-
-        // 5. BRUSHED STEEL (MODIFIED: Darker Grey)
-        const matSteel = new THREE.MeshStandardMaterial({
-            color: 0x888888, // Darker grey
-            roughness: 0.35,
-            metalness: 0.9,
-        });
-        
-        // 6. RED INDICATOR LED (ON state) - PURE RED, HIGH SHINE
-        const matRedLED = new THREE.MeshStandardMaterial({
-            color: 0xFF0000, 
-            roughness: 0.1,
-            metalness: 0.0,
-            emissive: 0xFF0000, 
-            emissiveIntensity: 8.0 // Very high intensity for a strong pure red glow
-        });
-
-        // 8. BLACK INDICATOR LED (OFF state) - STANDARD MATERIAL FOR SHADOWS/DARKNESS
-        const matBlackDot = new THREE.MeshStandardMaterial({
-            color: 0x010101, // Near black for deep dark appearance
-            roughness: 0.9,
-            metalness: 0.1,
-            emissive: 0x000000 // Ensure it doesn't emit any light
-        });
-        
-        // 7. BUTTON PRESS COLOR (Temporary) - Retained for black buttons
-        const matGrayPress = new THREE.MeshStandardMaterial({
-            color: 0xaaaaaa,
-            roughness: 0.8,
-            metalness: 0.1
-        });
+        const matBody = new THREE.MeshPhysicalMaterial({ color: colorYellow, roughness: 0.25, metalness: 0.05, clearcoat: 0.2, clearcoatRoughness: 0.1 });
+        const matBlack = new THREE.MeshStandardMaterial({ color: 0x111111, roughness: 0.8, metalness: 0.1 });
+        const colorGreen = 0x00A060; 
+        const matCyan = new THREE.MeshPhysicalMaterial({ color: colorGreen, roughness: 0.3, metalness: 0.0, emissive: colorGreen, emissiveIntensity: 3.0 });
+        const matSteel = new THREE.MeshStandardMaterial({ color: 0x888888, roughness: 0.35, metalness: 0.9 });
+        const matRedLED = new THREE.MeshStandardMaterial({ color: 0xFF0000, roughness: 0.1, metalness: 0.0, emissive: 0xFF0000, emissiveIntensity: 8.0 });
+        const matBlackDot = new THREE.MeshStandardMaterial({ color: 0x010101, roughness: 0.9, metalness: 0.1, emissive: 0x000000 });
+        const matGrayPress = new THREE.MeshStandardMaterial({ color: 0xaaaaaa, roughness: 0.8, metalness: 0.1 });
 
         // --- GEOMETRY HELPERS ---
         function createRoundedRect(w, h, r) {
@@ -381,463 +409,227 @@
         // --- BUILD DEVICE ---
         const deviceGroup = new THREE.Group();
 
-        // 1. CHASSIS
-        const chassisHeight = 2.2;
-        const chassisWidth = 5.75;
-        const chassisDepth = 0.6;
-        const chassisRadius = 0.55; 
-        const CHASSIS_HALF_Y = chassisHeight / 2; // 1.1
-
-        const chassisShape = createRoundedRect(chassisWidth, chassisHeight, chassisRadius);
-        const chassisGeo = new THREE.ExtrudeGeometry(chassisShape, {
-            depth: chassisDepth,
-            bevelEnabled: true,
-            bevelThickness: 0.08,
-            bevelSize: 0.08,
-            bevelSegments: 6
-        });
+        // Chassis
+        const chassisShape = createRoundedRect(5.75, 2.2, 0.55);
+        const chassisGeo = new THREE.ExtrudeGeometry(chassisShape, { depth: 0.6, bevelEnabled: true, bevelThickness: 0.08, bevelSize: 0.08, bevelSegments: 6 });
         chassisGeo.center();
         const chassis = new THREE.Mesh(chassisGeo, matBody);
         deviceGroup.add(chassis);
+        const Z_SURFACE = 0.38; // (0.6/2) + 0.08
 
-        const Z_SURFACE = (chassisDepth/2) + 0.08; // Front face Z
-
-        // 2. LEFT DIAL (With Quadrant Detail)
+        // Left Dial
         const dialGroup = new THREE.Group();
-        // Position is -1.75
         dialGroup.position.set(-1.75, 0, Z_SURFACE);
-
-        // NEW GROUP FOR THE RIM - THIS IS THE CLICKABLE, MOVING PART
+        
         const rimGroup = new THREE.Group();
-        rimGroup.name = 'DIAL_RIM'; // Name the group for interaction
-        rimGroup.userData.originalMat = matBlack; // *** NOW USING MATBLACK ***
+        rimGroup.name = 'VOLUME_DIAL_RIM'; 
+        rimGroup.userData.originalMat = matBlack;
         dialGroup.add(rimGroup);
-        clickableObjects.push(rimGroup); // Make the entire group clickable!
+        clickableObjects.push(rimGroup);
 
-        const DIAL_SIZE = 1.8;
-
-        // A. Outer Dish (Black) - CHILD OF rimGroup
-        const dishGeo = new THREE.CylinderGeometry(DIAL_SIZE/2, DIAL_SIZE/2 + 0.1, 0.15, 64);
-        const dish = new THREE.Mesh(dishGeo, matBlack); // *** NOW USING MATBLACK ***
+        const dishGeo = new THREE.CylinderGeometry(0.9, 1.0, 0.15, 64);
+        const dish = new THREE.Mesh(dishGeo, matBlack);
         dish.rotation.x = Math.PI/2;
-        dish.position.z = -0.05; // Position relative to rimGroup (its parent)
-        rimGroup.add(dish); // Add to new rimGroup
+        dish.position.z = -0.05;
+        rimGroup.add(dish);
 
-        // B. Inner Concave Slope - CHILD OF rimGroup
-        const slopeGeo = new THREE.CylinderGeometry(DIAL_SIZE/3.2, DIAL_SIZE/2, 0.2, 64, 1, true);
-        const slope = new THREE.Mesh(slopeGeo, matBlack); // *** NOW USING MATBLACK ***
+        const slopeGeo = new THREE.CylinderGeometry(0.56, 0.9, 0.2, 64, 1, true);
+        const slope = new THREE.Mesh(slopeGeo, matBlack);
         slope.rotation.x = Math.PI/2;
-        slope.position.z = 0.0; // Position relative to rimGroup (its parent)
-        rimGroup.add(slope); // Add to new rimGroup
+        slope.position.z = 0.0;
+        rimGroup.add(slope);
 
-        // D. Teal Center Button (Clickable) - SIBLING TO rimGroup
-        const btnGeo = new THREE.CylinderGeometry(DIAL_SIZE/3.3, DIAL_SIZE/3.3, 0.1, 64);
+        const btnGeo = new THREE.CylinderGeometry(0.54, 0.54, 0.1, 64);
         const btn = new THREE.Mesh(btnGeo, matCyan);
         btn.rotation.x = Math.PI/2;
         btn.position.z = 0.02;
-        btn.name = 'DIAL_CENTER'; // Add name for raycasting
+        btn.name = 'PLAY_PAUSE_BUTTON'; 
         btn.userData.originalMat = matCyan;
         dialGroup.add(btn); 
-        clickableObjects.push(btn); // Add to clickable list
-
+        clickableObjects.push(btn);
         deviceGroup.add(dialGroup);
 
-        // 3. CENTER SPEAKER ARRAY
-        // Grille dimensions to visually fit the 1:2 aspect ratio
-        const SPK_W = 1.0; 
-        const SPK_H = 1.8;
-        
-        // Texture Generation
+        // Center Speaker
         const cvs = document.createElement('canvas');
-        // Canvas dimensions matching desired visual aspect ratio for better texture mapping
-        cvs.width = 256; 
-        cvs.height = 512; // Double the height for 1:2 ratio
+        cvs.width = 256; cvs.height = 512;
         const ctx = cvs.getContext('2d');
-        // The background is left transparent to show the yellow chassis below
-        
-        // Draw dark holes
-        ctx.fillStyle = '#000000'; // Pure black for the holes
-        
-        // Grid configuration for staggered circular pattern (9 then 10)
-        const gridY = 20; // 21 rows total (0 to 20)
-        const radius = 7; 
-        const padX = 10; // REDUCED PADDING for density
-        const padY = 10; // REDUCED PADDING for density
-        const stepY = (cvs.height - padY*2) / gridY; // Vertical step remains constant
-
-        const drawableWidth = cvs.width - padX * 2;
-        
-        // Base horizontal spacing determined by the row with more dots (10 dots = 9 intervals)
-        const baseStepX = drawableWidth / (10 - 1); // 10 dots is the widest row
-
+        ctx.fillStyle = '#000000';
+        const gridY = 20; const radius = 7; const padX = 10; const padY = 10;
+        const stepY = (cvs.height - padY*2) / gridY;
+        const baseStepX = (cvs.width - padX*2) / 9;
         for(let y=0; y<=gridY; y++) {
-            // Rows 0, 2, 4, ... 20 have 9 dots (8 intervals)
-            // Rows 1, 3, 5, ... 19 have 10 dots (9 intervals)
             const numDots = (y % 2 === 0) ? 9 : 10; 
-            
-            // Calculate the total width spanned by the dots in this row (based on consistent spacing)
             const rowWidth = baseStepX * (numDots - 1);
-            
-            // Calculate the horizontal offset needed to center the row.
-            const centeringOffset = (drawableWidth - rowWidth) / 2;
-
+            const centeringOffset = ((cvs.width - padX*2) - rowWidth) / 2;
             for(let x=0; x<numDots; x++) {
-                const dotX = padX + centeringOffset + x * baseStepX;
-                
                 ctx.beginPath();
-                ctx.arc(dotX, padY + y*stepY, radius, 0, Math.PI*2);
+                ctx.arc(padX + centeringOffset + x * baseStepX, padY + y*stepY, radius, 0, Math.PI*2);
                 ctx.fill();
             }
         }
-
         const spkTex = new THREE.CanvasTexture(cvs);
-        // Ensure texture wrapping is set to repeat for tiling if necessary (though centered plane is better)
-        spkTex.wrapS = spkTex.wrapT = THREE.ClampToEdgeWrapping; 
-        
-        const matSpk = new THREE.MeshPhysicalMaterial({
-            map: spkTex,
-            color: 0x000000, // Color of the material is technically black, but only where the texture is drawn.
-            roughness: 0.4,
-            transparent: true, // IMPORTANT: Enable transparency
-            alphaTest: 0.1 // IMPORTANT: Cut out transparent parts
-        });
-        const spkPlane = new THREE.Mesh(new THREE.PlaneGeometry(SPK_W, SPK_H), matSpk);
-        // Position is -0.1
+        const spkPlane = new THREE.Mesh(new THREE.PlaneGeometry(1.0, 1.8), new THREE.MeshPhysicalMaterial({ map: spkTex, color: 0x000000, roughness: 0.4, transparent: true, alphaTest: 0.1 }));
         spkPlane.position.set(-0.21, 0, Z_SURFACE + 0.01); 
         deviceGroup.add(spkPlane);
 
-        // 4. RIGHT BUTTON CLUSTER
+        // Right Button Cluster
         const padGroup = new THREE.Group();
-        // Position is 1.55
         padGroup.position.set(1.55, 0, Z_SURFACE); 
-
-        // A. Housing (Rounded Rect)
-        const HS_H = 1.74; // Housing Height is fixed
-        const HS_W = 2.24; // Housing Width is fixed
-        
-        const hsShape = createRoundedRect(HS_W, HS_H, 0.25);
-        const hsGeo = new THREE.ExtrudeGeometry(hsShape, { depth: 0.05, bevelEnabled: false}); // Housing depth 0.05
+        const hsShape = createRoundedRect(2.24, 1.74, 0.25);
+        const hsGeo = new THREE.ExtrudeGeometry(hsShape, { depth: 0.05, bevelEnabled: false});
         hsGeo.center();
         const hs = new THREE.Mesh(hsGeo, matBlack);
         hs.position.z = 0.02;
         padGroup.add(hs);
 
-        // B. Buttons (4x Grid)
-        // Note: The 'gap' variable is retained for the bevel logic, but gaps are dynamically calculated
-        // based on the fixed housing size and new button dimensions.
-        const gap = 0.08; 
-        
-        // Button dimensions: W = 0.88, H = 0.66
-        const btnDimW = 0.88; 
-        const btnDimH = 0.66; 
-        
-        // New Gaps based on fixed housing (HS_W=2.24, HS_H=1.74)
-        const gapX = (HS_W - 2 * btnDimW) / 3; // 0.16
-        const gapY = (HS_H - 2 * btnDimH) / 3; // 0.14
-
-        // Button Shape using new dimensions
-        const btnShape = createRoundedRect(btnDimW, btnDimH, 0.12);
-        const btnGeom = new THREE.ExtrudeGeometry(btnShape, {
-            depth: 0.02, // CONFIRMED: depth 0.02
-            bevelEnabled: true,
-            bevelSize: 0.03,
-            bevelThickness: 0.03
-        });
+        const btnShape = createRoundedRect(0.88, 0.66, 0.12);
+        const btnGeom = new THREE.ExtrudeGeometry(btnShape, { depth: 0.02, bevelEnabled: true, bevelSize: 0.03, bevelThickness: 0.03 });
         btnGeom.center();
-
-        // Calculate positions based on new gaps and dimensions
-        // X position for right buttons: (btnDimW/2) + (gapX/2)
-        // X position for left buttons: -(btnDimW/2) - (gapX/2)
-        const X_OFFSET = (btnDimW / 2) + (gapX / 2);
-        const Y_OFFSET = (btnDimH / 2) + (gapY / 2);
-
-        // New Z position for the buttons (slight raise above the Z=0.02 housing pad)
-        const BUTTON_Z_POS = 0.04; // CONFIRMED: 0.04
-
+        
+        const gapX = (2.24 - 2 * 0.88) / 3;
+        const gapY = (1.74 - 2 * 0.66) / 3;
+        const X_OFFSET = (0.88 / 2) + (gapX / 2);
+        const Y_OFFSET = (0.66 / 2) + (gapY / 2);
+        
         const positions = [
-            { x: -X_OFFSET, y: Y_OFFSET, mat: matBlack, name: 'BUTTON_TL', originalMat: matBlack }, // TL
-            { x: X_OFFSET, y: Y_OFFSET, mat: matBlack, name: 'BUTTON_TR', originalMat: matBlack },  // TR
-            { x: -X_OFFSET, y: -Y_OFFSET, mat: matBlack, name: 'BUTTON_BL', originalMat: matBlack },// BL
-            { x: X_OFFSET, y: -Y_OFFSET, mat: matSteel, name: 'ACTION_BUTTON', originalMat: matSteel }  // BR (Steel)
+            { x: -X_OFFSET, y: Y_OFFSET, mat: matBlack, name: 'MUSIC_BUTTON' },
+            { x: X_OFFSET, y: Y_OFFSET, mat: matBlack, name: 'STORY_BUTTON' },
+            { x: -X_OFFSET, y: -Y_OFFSET, mat: matBlack, name: 'CITY_INFO_BUTTON' },
+            { x: X_OFFSET, y: -Y_OFFSET, mat: matSteel, name: 'RECORD_BUTTON' }
         ];
 
         positions.forEach((p) => {
             const b = new THREE.Mesh(btnGeom, p.mat);
-            b.position.set(p.x, p.y, BUTTON_Z_POS); // Z position
+            b.position.set(p.x, p.y, 0.04);
             b.name = p.name;
-            b.userData.originalMat = p.originalMat; // Store original material reference
-            
-            // Add Red Dot to last button (BR)
-            if(p.name === 'ACTION_BUTTON') {
-                const dGeo = new THREE.CircleGeometry(0.04, 16);
-                const dMat = matBlackDot; // Start as black (off)
-                const dot = new THREE.Mesh(dGeo, dMat);
-                
-                // Position in top-right corner of the button
-                // Z position for the dot
-                dot.position.set(btnDimW/3, -btnDimH/3, BUTTON_Z_POS); 
+            b.userData.originalMat = p.mat;
+            if(p.name === 'RECORD_BUTTON') {
+                const dot = new THREE.Mesh(new THREE.CircleGeometry(0.04, 16), matBlackDot);
+                dot.position.set(0.88/3, -0.66/3, 0.04);
                 b.add(dot);
-                redDotLED = dot; // Store global reference
+                redDotLED = dot;
             }
             padGroup.add(b);
-            clickableObjects.push(b); // Add to clickable list
+            clickableObjects.push(b);
         });
-
         deviceGroup.add(padGroup);
         
-        // --- BOTTOM FACE BUTTON (as previously implemented) ---
-        const bottomBtnWidth = 1.0; 
-        const bottomBtnHeight = 0.2; // Slim height
-        const bottomBtnDepth = 0.02; // Thickness
-        const bottomBtnRadius = 0.08; 
-        const bottomOffset = 0.1; 
-
-        const bottomBtnShape = createRoundedRect(bottomBtnWidth, bottomBtnHeight, bottomBtnRadius);
-        const bottomBtnGeo = new THREE.ExtrudeGeometry(bottomBtnShape, {
-            depth: bottomBtnDepth,
-            bevelEnabled: true,
-            bevelSize: 0.03,
-            bevelThickness: 0.03
-        });
+        // Restart Button
+        const bottomBtnShape = createRoundedRect(1.0, 0.2, 0.08);
+        const bottomBtnGeo = new THREE.ExtrudeGeometry(bottomBtnShape, { depth: 0.02, bevelEnabled: true, bevelSize: 0.03, bevelThickness: 0.03 });
         bottomBtnGeo.center();
-
         const bottomButton = new THREE.Mesh(bottomBtnGeo, matBlack);
-        
-        // Chassis center is (0, 0, 0). Bottom face is at Y = -1.1.
-        // We need to rotate the button -90 degrees around X to lay it flat on the bottom face.
-        bottomButton.rotation.x = THREE.MathUtils.degToRad(-90); 
-        
-        // Position:
-        const CHASSIS_HALF_Z = chassisDepth / 2;
-        
-        bottomButton.position.set(
-            0, // X: Centered
-            -CHASSIS_HALF_Y, // Y: Place at the bottom face (Y=-1.1)
-            CHASSIS_HALF_Z - bottomOffset // Z: Position near the back edge
-        );
-
-        bottomButton.name = 'BOTTOM_FACE_BUTTON';
+        bottomButton.rotation.x = THREE.MathUtils.degToRad(-90);
+        bottomButton.position.set(0, -1.1, 0.3 - 0.1);
+        bottomButton.name = 'RESTART_BUTTON';
         bottomButton.userData.originalMat = matBlack;
-        chassis.add(bottomButton); // Attach to chassis
-        clickableObjects.push(bottomButton); // Add to clickable list
+        chassis.add(bottomButton);
+        clickableObjects.push(bottomButton);
 
         scene.add(deviceGroup);
 
-        // --- INTERACTION LOGIC ---
+        // --- INTERACTION ---
         function onPointerDown(event) {
-            // Calculate mouse position in normalized device coordinates (-1 to +1)
             mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
             mouse.y = - (event.clientY / window.innerHeight) * 2 + 1;
-
-            // Update the picking ray with the camera and mouse position
             raycaster.setFromCamera(mouse, camera);
-
-            // Set recursive to true so raycaster checks children of groups (rimGroup)
             const intersects = raycaster.intersectObjects(clickableObjects, true);
 
             if (intersects.length > 0) {
-                // Get the mesh that was hit
-                const hitMesh = intersects[0].object;
-                
-                // Determine the interactive element (mesh or group parent)
-                let interactiveElement = hitMesh;
+                let interactiveElement = intersects[0].object;
+                if (interactiveElement.parent && interactiveElement.parent.name === 'VOLUME_DIAL_RIM') interactiveElement = interactiveElement.parent;
 
-                // If the hit mesh is a child of the rimGroup, the element we interact with is the group itself
-                if (hitMesh.parent && hitMesh.parent.name === 'DIAL_RIM') {
-                    interactiveElement = hitMesh.parent;
-                }
-
-                // Visual Feedback: Button Press Animation
                 const originalZ = interactiveElement.position.z;
-                const originalY = interactiveElement.position.y; 
+                const originalY = interactiveElement.position.y;
                 const originalScale = interactiveElement.scale.clone();
-                
-                // --- STANDARD BUTTON LOGIC START ---
-                let pressDistance = 0.01; // STANDARD BUTTON DISTANCE (Used for all buttons now)
-                let momentaryMaterial = matGrayPress; // STANDARD BUTTON PRESS COLOR (Used for all buttons now)
-                // --- STANDARD BUTTON LOGIC END ---
-                
-                // If the interactive element is the rim group, apply standard parameters
-                if (interactiveElement.name === 'DIAL_RIM') {
-                    
-                    // The rim group's children (dish/slope) need to switch materials individually
-                    interactiveElement.children.forEach(child => {
-                        child.material = momentaryMaterial; // Uses matGrayPress
-                    });
-                }
-                
-                // Apply visual changes
-                if (interactiveElement.name === 'BOTTOM_FACE_BUTTON') {
-                    // This button is rotated, so press along local Z (world -Y)
-                    interactiveElement.position.y -= pressDistance; 
-                } else if (interactiveElement.name === 'DIAL_RIM' || interactiveElement.name === 'DIAL_CENTER' || interactiveElement.name.startsWith('BUTTON')) {
-                    // Front-facing elements press along World Z
-                    interactiveElement.position.z -= pressDistance; 
-                }
+                let momentaryMaterial = matGrayPress;
 
-                interactiveElement.scale.set(0.98, 0.98, 0.98); // Shrink slightly
-                
-                // Only apply temporary material if it's not the Rim Group (handled above) 
-                // and not the Dial Center (which uses emissive).
-                if (interactiveElement.name !== 'DIAL_RIM' && interactiveElement.name !== 'DIAL_CENTER') {
-                     interactiveElement.material = momentaryMaterial;
+                if (interactiveElement.name === 'VOLUME_DIAL_RIM') {
+                    interactiveElement.children.forEach(child => child.material = momentaryMaterial);
                 }
-                // Dial Center uses emissive color, so no temporary material needed.
+                
+                if (interactiveElement.name === 'RESTART_BUTTON') interactiveElement.position.y -= 0.01;
+                else interactiveElement.position.z -= 0.01;
+
+                interactiveElement.scale.set(0.98, 0.98, 0.98);
+                
+                if (interactiveElement.name !== 'VOLUME_DIAL_RIM' && interactiveElement.name !== 'PLAY_PAUSE_BUTTON' && interactiveElement.name !== 'RECORD_BUTTON') {
+                    interactiveElement.material = momentaryMaterial;
+                }
 
                 setTimeout(() => {
-                    // Release animation
-                    if (interactiveElement.name === 'BOTTOM_FACE_BUTTON') {
-                        // Restore Y position for the bottom button
-                        interactiveElement.position.y = originalY; 
-                    } else {
-                        // Restore Z position for front-facing elements
-                        interactiveElement.position.z = originalZ;
-                    }
+                    if (interactiveElement.name === 'RESTART_BUTTON') interactiveElement.position.y = originalY;
+                    else interactiveElement.position.z = originalZ;
                     interactiveElement.scale.copy(originalScale);
                     
-                    // Restore original material
-                    if (interactiveElement.name === 'DIAL_RIM') {
-                        interactiveElement.children.forEach(child => {
-                            // Restore to the MAT BLACK material
-                            child.material = matBlack;
-                        });
-                    } else if (interactiveElement.name !== 'DIAL_CENTER') {
-                        interactiveElement.material = interactiveElement.userData.originalMat || matBlack;
-                    }
+                    if (interactiveElement.name === 'VOLUME_DIAL_RIM') interactiveElement.children.forEach(child => child.material = matBlack);
+                    else if (interactiveElement.name !== 'PLAY_PAUSE_BUTTON') interactiveElement.material = interactiveElement.userData.originalMat || matBlack;
                 }, 150);
 
-                console.log('Button clicked:', interactiveElement.name);
-
-                // --- DEMONSTRATE FUNCTIONALITY ---
-                if (interactiveElement.name === 'DIAL_RIM') {
-                    console.log('Dial Rim: Click acknowledged - Unified movement success.');
-                } else if (interactiveElement.name === 'DIAL_CENTER') {
-                    console.log('Dial Center: Click acknowledged. Color remains green.');
-                } else if (interactiveElement.name === 'ACTION_BUTTON') {
-                    
-                    if (redDotLED) {
-                        // Toggle LED between red (ON) and black (OFF)
-                        if (redDotLED.material.color.getHex() === matBlackDot.color.getHex()) {
-                            redDotLED.material = matRedLED;
-                            console.log('Action Button: LED ON.');
-                        } else {
-                            redDotLED.material = matBlackDot;
-                            console.log('Action Button: LED OFF.');
-                        }
-                    }
-                    console.log('Action Button: Simple press acknowledged.');
-                } else if (interactiveElement.name === 'BOTTOM_FACE_BUTTON') {
-                    console.log('Bottom Face Button: Click acknowledged (Power/Reset function).');
-                } else if (interactiveElement.name.startsWith('BUTTON')) {
-                    console.log('Standard Button: Click acknowledged.');
+                if (interactiveElement.name === 'RECORD_BUTTON' && redDotLED) {
+                    redDotLED.material = (redDotLED.material.color.getHex() === matBlackDot.color.getHex()) ? matRedLED : matBlackDot;
                 }
+                
+                console.log('Clicked:', interactiveElement.name);
             }
         }
-
         container.addEventListener('pointerdown', onPointerDown, false);
 
-        // --- ANIMATION / SCROLL LOGIC ---
-        
-        // Defines camera and object targets for each section
+        // --- SCROLL ANIMATION ---
         const targets = {
-            'front': { 
-                cam: {x:0, y:-0.8, z:8.5}, // Camera moved down more to shift object higher
-                rot: {x:0, y:0, z:0} 
-            },
-            'interface': { 
-                cam: {x:0.5, y:0, z:5}, // Camera moved further left to shift object more right
-                rot: {x:0, y:0.25, z:0} // Slight turn to see buttons
-            },
-            'details': { 
-                cam: {x:-0.5, y:0, z:5}, // Camera moved further right to shift object more left
-                rot: {x:0, y:-0.25, z:0} // Slight turn to see dial
-            },
-            'specs': { 
-                cam: {x:0, y:1.2, z:7}, // Camera lowered to reveal bottom edge
-                rot: {x:THREE.MathUtils.degToRad(-90), y:0, z:0} // Rotate -90 degrees around X-axis (Dial faces top)
-            }
+            'front': { cam: {x:0, y:-0.8, z:8.5}, rot: {x:0, y:0, z:0} },
+            'functional': { cam: {x:0.5, y:0, z:5}, rot: {x:0, y:0.25, z:0} },
+            'universal': { cam: {x:-0.5, y:0, z:5}, rot: {x:0, y:-0.25, z:0} },
+            'specs': { cam: {x:0, y:1.2, z:7}, rot: {x:THREE.MathUtils.degToRad(-90), y:0, z:0} }
         };
-
         let currentSection = 'front';
 
         function updateScroll() {
-            const sections = ['front', 'interface', 'details', 'specs'];
+            const sections = ['front', 'functional', 'universal', 'specs'];
             let bestMatch = sections[0];
             let maxVis = 0;
-
             sections.forEach(id => {
                 const el = document.getElementById(id);
                 if (!el) return;
                 const rect = el.getBoundingClientRect();
-                // Simple visibility check
                 const visibleHeight = Math.min(rect.bottom, window.innerHeight) - Math.max(rect.top, 0);
-                if (visibleHeight > maxVis) {
-                    maxVis = visibleHeight;
-                    bestMatch = id;
-                }
+                if (visibleHeight > maxVis) { maxVis = visibleHeight; bestMatch = id; }
             });
             currentSection = bestMatch;
         }
-
         window.addEventListener('scroll', updateScroll);
 
         function animate() {
             requestAnimationFrame(animate);
-
             const tgt = targets[currentSection];
             if(tgt) {
-                // Smooth Camera Interp
                 camera.position.x += (tgt.cam.x - camera.position.x) * 0.05;
                 camera.position.y += (tgt.cam.y - camera.position.y) * 0.05;
                 camera.position.z += (tgt.cam.z - camera.position.z) * 0.05;
-
-                // Smooth Object Rotation
                 deviceGroup.rotation.x += (tgt.rot.x - deviceGroup.rotation.x) * 0.05;
                 deviceGroup.rotation.y += (tgt.rot.y - deviceGroup.rotation.y) * 0.05;
                 deviceGroup.rotation.z += (tgt.rot.z - deviceGroup.rotation.z) * 0.05;
             }
-
-            // Idle Float
-            const time = Date.now() * 0.001;
-            deviceGroup.position.y = Math.sin(time) * 0.05;
-
-            // Use composer if available, otherwise use default renderer
-            if (composer) {
-                composer.render();
-            } else {
-                renderer.render(scene, camera);
-            }
+            deviceGroup.position.y = Math.sin(Date.now() * 0.001) * 0.05;
+            if (composer) composer.render(); else renderer.render(scene, camera);
         }
 
-        // --- RESIZE HANDLER ---
         window.addEventListener('resize', () => {
             camera.aspect = window.innerWidth / window.innerHeight;
             camera.updateProjectionMatrix();
             renderer.setSize(window.innerWidth, window.innerHeight);
-            if (composer) {
-                 composer.setSize(window.innerWidth, window.innerHeight); // Update composer size
-            }
+            if (composer) composer.setSize(window.innerWidth, window.innerHeight);
         });
 
-        // --- INIT ---
         window.onload = () => {
             const loader = document.getElementById('loader');
             if (loader) {
                 loader.style.opacity = 0;
-                setTimeout(() => {
-                    loader.style.display = 'none';
-                }, 500);
+                setTimeout(() => loader.style.display = 'none', 500);
             }
             animate();
         };
-
-        if (document.readyState === 'complete' || document.readyState === 'interactive') {
-             initPostProcessing();
-        } else {
-             window.addEventListener('DOMContentLoaded', initPostProcessing);
-        }
-
-    })(); // End IIFE
+    })();
     </script>
 </body>
 </html>
