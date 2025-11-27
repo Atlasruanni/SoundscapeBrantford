@@ -22,6 +22,7 @@
         body { 
             font-family: 'Inter', sans-serif; 
             overflow-x: hidden; 
+            /* overflow-y: auto; -- Restored scrollable state */
             background-color: #000000; 
             color: #f5f5f7;
         }
@@ -86,19 +87,42 @@
             gap: 1rem;
         }
 
+        /* Updated Scroll Indicator Styling */
         .scroll-indicator {
             position: absolute;
             bottom: 2rem;
             left: 50%;
             transform: translateX(-50%);
-            animation: pulse 2s infinite;
-            opacity: 0.5;
+            opacity: 0.8; /* Increased visibility */
+            display: flex; /* ADDED */
+            flex-direction: column; /* ADDED */
+            align-items: center; /* ADDED */
+        }
+        .scroll-indicator svg { /* ADDED */
+            margin-top: 4px;
+            animation: bounce 1.5s infinite;
+        }
+        
+        /* FIX: Class to control animation state */
+        .scroll-indicator.paused svg {
+            animation-play-state: paused;
         }
 
         @keyframes pulse {
             0% { opacity: 0.3; transform: translateX(-50%) scale(0.95); }
             50% { opacity: 0.7; transform: translateX(-50%) scale(1); }
             100% { opacity: 0.3; transform: translateX(-50%) scale(0.95); }
+        }
+        @keyframes bounce { /* ADDED */
+            0%, 20%, 50%, 80%, 100% {
+                transform: translateY(0);
+            }
+            40% {
+                transform: translateY(-8px);
+            }
+            60% {
+                transform: translateY(-4px);
+            }
         }
 
         .loader {
@@ -208,6 +232,25 @@
             max-width: 350px;
             text-align: center;
         }
+        
+        /* 360 Toggle Button Group Styling */
+        .toggle-group {
+            position: fixed;
+            bottom: 6px; /* Reduced from 6 to give more space */
+            right: 6px;
+            z-index: 1001; /* High Z-index */
+            display: flex;
+            align-items: center;
+            gap: 8px; /* Space between buttons */
+        }
+        
+        /* Style adjustments for the main toggle button (360 View) */
+        #btn-360-toggle {
+            pointer-events: auto;
+            display: flex;
+            align-items: center;
+        }
+
 
     </style>
 </head>
@@ -250,13 +293,27 @@
         <div class="text-lg font-bold tracking-tighter text-white">
             BRANTFORD.<span class="text-yellow-500">SOUNDSCAPE</span>
         </div>
-        <div class="hidden md:flex gap-8 font-medium">
-            <a href="#front" class="nav-link">Overview</a>
-            <a href="#functional" class="nav-link">Features</a>
-            <a href="#universal" class="nav-link">Controls</a>
-            <a href="#specs" class="nav-link">Tech Specs</a>
-        </div>
+        <!-- Navigation links removed -->
+        
+        <!-- Exit 360 View Button (Top Right, fixed to Nav position) - Visibility controlled by JS -->
+        <button id="btn-360-exit" class="p-2 rounded-full bg-red-600/90 backdrop-blur-md text-white hover:bg-red-500/90 transition shadow-lg opacity-0 pointer-events-none" style="position: fixed; top: 20px; right: 24px; z-index: 1000;">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
+        </button>
     </nav>
+    
+    <!-- 360 View Toggle Group (Bottom Right) -->
+    <div class="toggle-group">
+        <!-- 360 Exit Button (Hidden unless 360 mode is active) -->
+        <button id="btn-360-exit-bottom" class="p-3 rounded-full bg-zinc-700/70 backdrop-blur-md text-white hover:bg-zinc-600/80 transition shadow-lg opacity-0 pointer-events-none">
+             <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
+        </button>
+        
+        <!-- 360 View Toggle Button (Always visible when not in 360 mode) -->
+        <button id="btn-360-toggle" class="z-50 p-3 rounded-full bg-zinc-800/70 backdrop-blur-md text-white hover:bg-zinc-700/80 transition shadow-lg pointer-events-auto flex items-center space-x-2">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11.412 10.356A8.001 8.001 0 0120 11.5M4 15V9" /></svg>
+            <span class="text-sm font-medium">360° View</span>
+        </button>
+    </div>
     
     <!-- FIXED OVERLAYS -->
     
@@ -394,7 +451,12 @@
                 An interactive audio experience designed to enhance community connection and deliver real-time information to Brantford.
             </p>
         </div>
-        <div class="scroll-indicator text-zinc-500 text-xs font-medium tracking-widest uppercase">Scroll</div>
+        <div class="scroll-indicator text-zinc-500 text-xs font-medium tracking-widest uppercase">
+            Scroll
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                <path fill-rule="evenodd" d="M10 3a1 1 0 011 1v10.586l3.293-3.293a1 1 0 111.414 1.414l-5 5a1 1 0 01-1.414 0l-5-5a1 1 0 111.414-1.414L9 14.586V4a1 1 0 011-1z" clip-rule="evenodd" />
+            </svg>
+        </div>
     </section>
 
     <!-- Section 2: Functional Keys (Anchor only) -->
@@ -434,9 +496,12 @@
         }, duration);
     }
     
-    // Global variable to track playback state
+    // Global state
     let isPlaying = true; 
     let playPauseIcon = null;
+    let is360Mode = false; // ADDED
+    let isDragging = false; // ADDED
+    let previousMousePosition = { x: 0, y: 0 }; // ADDED
 
     // Function to update the play/pause icon appearance
     function updatePlayPauseIcon(playing) {
@@ -482,9 +547,10 @@
     // AUDIO MANAGER (FIXED)
     const AudioManager = {
         trackList: [
-            'https://fuzzy-scarlet-m7gimsnfzq-epxr39fr6k.edgeone.dev/jazz-background-music-333352.mp3',
-            'https://tiny-azure-anfm7n7rnu-nemfftrw99.edgeone.dev/jazz-background-music-338663.mp3',
-            'https://convincing-crimson-owffapndzq-dczemnx44v.edgeone.dev/jazz-background-music-379027.mp3'
+            'jazz-background-music-333352.mp3',
+            'jazz-background-music-338663.mp3',
+            'jazz-background-music-379027.mp3',
+            'jazz-background-music-426859.mp3'
         ],
         currentTrackIndex: 0,
         audioElement: null,
@@ -743,8 +809,8 @@
         scene.add(fillLight);
 
         // --- MATERIALS ---
-        // Model color to be more orange (0xFF9900)
-        const colorYellow = 0xFF9900; 
+        // Model color changed to a richer orange (0xEE8500)
+        const colorYellow = 0xEE8500; 
         const matBody = new THREE.MeshPhysicalMaterial({ color: colorYellow, roughness: 0.25, metalness: 0.05, clearcoat: 0.2, clearcoatRoughness: 0.1 });
         const matBlack = new THREE.MeshStandardMaterial({ color: 0x111111, roughness: 0.8, metalness: 0.1 });
         const colorGreen = 0x00A060; 
@@ -892,7 +958,10 @@
         scene.add(deviceGroup);
 
         // --- INTERACTION LOGIC ---
-        function onPointerDown(event) {
+        function onInteractionClick(event) { // RENAMED FROM onPointerDown
+            // Exit if in 360 mode, as dragging takes over
+            if (is360Mode) return;
+            
             // CRITICAL: Start background audio on first interaction
             AudioManager.startBackground();
 
@@ -998,9 +1067,8 @@
                 }, 150);
             }
         }
-        container.addEventListener('pointerdown', onPointerDown, false);
-
-        // --- MODAL / WARNING LOGIC (New) ---
+        
+        // --- MODAL / WARNING LOGIC ---
         function showConfirmModal() {
             const modalOverlay = document.getElementById('confirm-modal-overlay');
             if (modalOverlay) {
@@ -1028,6 +1096,147 @@
             showMessage("System Restarting...", 3000);
             setTimeout(() => location.reload(), 1000);
         });
+        
+        // Global state and 360 view management
+        let currentTarget = null; 
+
+        // Function to handle 360 mode
+        function toggle360Mode(enable) {
+            is360Mode = enable;
+            const nav = document.querySelector('nav');
+            const exitButton = document.getElementById('btn-360-exit-bottom');
+            const toggleButton = document.getElementById('btn-360-toggle');
+            const overlays = document.querySelectorAll('.main-content-overlay');
+            const sections = document.querySelectorAll('.content-section');
+            const scrollIndicator = document.querySelector('.scroll-indicator'); 
+            const navExitButton = document.getElementById('btn-360-exit');
+            const toggleGroup = document.querySelector('.toggle-group');
+
+            // Hide/Show all non-critical UI elements
+            const elementsToToggle = [...overlays, ...sections, scrollIndicator]; 
+
+            elementsToToggle.forEach(el => {
+                if (el) {
+                    el.style.opacity = enable ? 0 : 1;
+                    el.style.pointerEvents = enable ? 'none' : 'auto';
+                }
+            });
+            
+            // Handle nav bar and footer visibility separately
+            if (nav) {
+                nav.style.opacity = enable ? 0 : 1;
+                nav.style.pointerEvents = enable ? 'none' : 'auto';
+            }
+            const footer = document.querySelector('footer');
+            if (footer) {
+                footer.style.opacity = enable ? 0 : 1;
+            }
+
+            // Toggle bottom exit/toggle buttons group
+            if (toggleGroup) {
+                toggleGroup.style.opacity = enable ? 1 : 1;
+                toggleGroup.style.pointerEvents = 'auto'; 
+            }
+            
+            if (exitButton) {
+                exitButton.style.opacity = enable ? 1 : 0;
+                exitButton.style.pointerEvents = enable ? 'auto' : 'none';
+            }
+            
+            if (toggleButton) {
+                 toggleButton.style.opacity = enable ? 0 : 1; 
+                 toggleButton.style.pointerEvents = enable ? 'none' : 'auto';
+            }
+            
+            document.body.style.overflowY = enable ? 'hidden' : 'auto'; // Re-enable scroll on exit
+
+            if (enable) {
+                // Center model target
+                currentTarget = { cam: {x:0, y:0, z:5}, rot: {x:0, y:0, z:0} };
+                container.style.cursor = 'grab';
+                showMessage("360° View Enabled. Drag to rotate.", 3000);
+                
+                // Pause scroll arrow animation if it exists
+                if (scrollIndicator) scrollIndicator.classList.add('paused'); 
+            } else {
+                // Resume scroll arrow animation
+                if (scrollIndicator) scrollIndicator.classList.remove('paused');
+                
+                // Exit 360 mode: Reset state and jump back to the 'front' view target
+                currentTarget = targets['front'];
+                container.style.cursor = 'auto';
+                // Re-enable scroll observers for UI elements
+                updateScroll(); 
+            }
+        }
+        
+        // Add event listeners for 360 buttons
+        document.getElementById('btn-360-toggle')?.addEventListener('click', () => {
+            toggle360Mode(true);
+        });
+        document.getElementById('btn-360-exit-bottom')?.addEventListener('click', () => {
+            toggle360Mode(false);
+        });
+        document.getElementById('btn-360-exit')?.addEventListener('click', () => {
+            // This is the old top button, ensuring it does nothing when disabled
+            if (document.getElementById('btn-360-exit').style.opacity > 0) toggle360Mode(false);
+        });
+
+
+        // Event handler functions for mouse/touch interactions
+        function onMouseDown(event) {
+            if (is360Mode) {
+                isDragging = true;
+                previousMousePosition.x = event.clientX;
+                previousMousePosition.y = event.clientY;
+                container.style.cursor = 'grabbing';
+            } else {
+                onInteractionClick(event); // Existing click logic
+            }
+        }
+
+        function onMouseMove(event) {
+            if (is360Mode && isDragging) {
+                const deltaX = event.clientX - previousMousePosition.x;
+                const deltaY = event.clientY - previousMousePosition.y;
+
+                // Rotation speed adjustment
+                const rotationSpeed = 0.005; 
+
+                deviceGroup.rotation.y += deltaX * rotationSpeed;
+                deviceGroup.rotation.x += deltaY * rotationSpeed;
+                
+                // Clamp rotation to prevent flipping
+                deviceGroup.rotation.x = Math.max(-Math.PI / 2, Math.min(Math.PI / 2, deviceGroup.rotation.x));
+
+                previousMousePosition.x = event.clientX;
+                previousMousePosition.y = event.clientY;
+            }
+        }
+
+        function onMouseUp() {
+            isDragging = false;
+            if (is360Mode) container.style.cursor = 'grab';
+        }
+
+        // Setup Mouse/Touch Listeners
+        container.addEventListener('mousedown', onMouseDown, false);
+        container.addEventListener('mousemove', onMouseMove, false);
+        container.addEventListener('mouseup', onMouseUp, false);
+
+        container.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            const touch = e.touches[0];
+            onMouseDown({ clientX: touch.clientX, clientY: touch.clientY });
+        }, false);
+
+        container.addEventListener('touchmove', (e) => {
+            e.preventDefault();
+            const touch = e.touches[0];
+            onMouseMove({ clientX: touch.clientX, clientY: touch.clientY });
+        }, false);
+
+        container.addEventListener('touchend', onMouseUp, false);
 
 
         // --- SCROLL ANIMATION ---
@@ -1043,6 +1252,7 @@
 
 
         function updateScroll() {
+            // Recalculates which section is currently visible based on scroll position
             const sections = ['front', 'functional', 'universal', 'specs'];
             let bestMatch = sections[0];
             let maxVis = 0;
@@ -1050,10 +1260,16 @@
                 const el = document.getElementById(id);
                 if (!el) return;
                 const rect = el.getBoundingClientRect();
+                // Check visible height of section within viewport
                 const visibleHeight = Math.min(rect.bottom, window.innerHeight) - Math.max(rect.top, 0);
                 if (visibleHeight > maxVis) { maxVis = visibleHeight; bestMatch = id; }
             });
             currentSection = bestMatch;
+            
+            // Set currentTarget for animate loop based on scroll position if not in 360 mode
+            if (!is360Mode) {
+                currentTarget = targets[currentSection];
+            }
 
             // OVERLAY CONTROL LOGIC (Fixed overlays based on current section)
             const functionalOverlay = document.getElementById('functional-card-overlay');
@@ -1063,27 +1279,37 @@
             
             // Function to set opacity and pointer events
             const setOverlayVisibility = (element, visible) => {
+                if (!element) return;
                 element.style.opacity = visible ? 1 : 0;
                 element.style.pointerEvents = visible ? 'auto' : 'none';
             };
 
-            setOverlayVisibility(functionalOverlay, currentSection === 'functional');
-            setOverlayVisibility(universalCardOverlay, currentSection === 'universal');
-            setOverlayVisibility(maintenanceAccessOverlay, currentSection === 'specs');
-            setOverlayVisibility(maintenanceRestartOverlay, currentSection === 'specs');
+            // Calculate visibility based on scroll and 360 mode
+            setOverlayVisibility(functionalOverlay, currentSection === 'functional' && !is360Mode);
+            setOverlayVisibility(universalCardOverlay, currentSection === 'universal' && !is360Mode);
+            setOverlayVisibility(maintenanceAccessOverlay, currentSection === 'specs' && !is360Mode);
+            setOverlayVisibility(maintenanceRestartOverlay, currentSection === 'specs' && !is360Mode);
             
             // NEW: Hero Fade-Out Logic
             const scrollDistance = window.scrollY;
             const fadeEnd = window.innerHeight * 0.75; // Fade out by 75% of the first viewport
             
             let opacity = 1;
-            if (scrollDistance > 0) {
+            let visibility = true;
+
+            if (currentSection !== 'front') {
+                // If past the front section, hero is fully invisible
+                opacity = 0;
+                visibility = false;
+            } else if (scrollDistance > 0) {
+                // While scrolling on the front page, fade it out
                 opacity = 1 - (scrollDistance / fadeEnd);
                 opacity = Math.max(0, opacity); // Clamp between 0 and 1
             }
             
             if (heroContent) {
                 heroContent.style.opacity = opacity;
+                heroContent.style.pointerEvents = visibility ? 'auto' : 'none';
                 heroContent.style.transform = `translateY(${scrollDistance * 0.5}px)`; // Add slight parallax lift
             }
 
@@ -1095,14 +1321,20 @@
 
         function animate() {
             requestAnimationFrame(animate);
-            const tgt = targets[currentSection];
+            const tgt = currentTarget; // Use the dynamically set target
+            
             if(tgt) {
+                // Camera position smoothing
                 camera.position.x += (tgt.cam.x - camera.position.x) * 0.05;
                 camera.position.y += (tgt.cam.y - camera.position.y) * 0.05;
                 camera.position.z += (tgt.cam.z - camera.position.z) * 0.05;
-                deviceGroup.rotation.x += (tgt.rot.x - deviceGroup.rotation.x) * 0.05;
-                deviceGroup.rotation.y += (tgt.rot.y - deviceGroup.rotation.y) * 0.05;
-                deviceGroup.rotation.z += (tgt.rot.z - deviceGroup.rotation.z) * 0.05;
+
+                // Rotation smoothing (Only if not actively dragging)
+                if (!isDragging && !is360Mode) {
+                    deviceGroup.rotation.x += (tgt.rot.x - deviceGroup.rotation.x) * 0.05;
+                    deviceGroup.rotation.y += (tgt.rot.y - deviceGroup.rotation.y) * 0.05;
+                    deviceGroup.rotation.z += (tgt.rot.z - deviceGroup.rotation.z) * 0.05;
+                }
             }
             deviceGroup.position.y = Math.sin(Date.now() * 0.001) * 0.05;
 
@@ -1145,6 +1377,8 @@
             }
             // Capture the icon element after the DOM is fully loaded
             playPauseIcon = document.getElementById('play-pause-icon');
+            // Initial target setup
+            currentTarget = targets['front'];
             // Initial state: Music is playing after the first interaction
             updatePlayPauseIcon(true); 
             animate();
