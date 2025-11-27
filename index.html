@@ -97,7 +97,6 @@
             display: flex; /* ADDED */
             flex-direction: column; /* ADDED */
             align-items: center; /* ADDED */
-            transition: opacity 0.5s ease-out; /* Enable fade out */
         }
         .scroll-indicator svg { /* ADDED */
             margin-top: 4px;
@@ -234,29 +233,24 @@
             text-align: center;
         }
         
-        /* 360 Toggle Button Group Styling (Combined) */
+        /* 360 Toggle Button Group Styling */
         .toggle-group {
             position: fixed;
-            bottom: 6px; 
+            bottom: 6px; /* Reduced from 6 to give more space */
             right: 6px;
-            z-index: 1001; 
+            z-index: 1001; /* High Z-index */
             display: flex;
             align-items: center;
-            gap: 8px; 
+            gap: 8px; /* Space between buttons */
         }
         
-        /* Combined 360 Button Styling */
-        .btn-360-combined {
+        /* Style adjustments for the main toggle button (360 View) */
+        #btn-360-toggle {
             pointer-events: auto;
             display: flex;
             align-items: center;
-            padding: 12px; /* Base padding for the button */
-            border-radius: 9999px;
-            backdrop-filter: blur(10px);
-            -webkit-backdrop-filter: blur(10px);
-            transition: all 0.3s ease;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
         }
+
 
     </style>
 </head>
@@ -294,23 +288,30 @@
     <!-- 3D Canvas -->
     <div id="canvas-container"></div>
 
-    <!-- Navigation (Hides when 360 mode is enabled) -->
+    <!-- Navigation -->
     <nav class="fixed top-0 w-full z-50 px-6 md:px-12 py-4 flex justify-between items-center pointer-events-auto">
         <div class="text-lg font-bold tracking-tighter text-white">
             BRANTFORD.<span class="text-yellow-500">SOUNDSCAPE</span>
         </div>
-        <!-- Removed navigation links -->
+        <!-- Navigation links removed -->
         
-        <!-- Exit 360 View Button (Top Right, fixed to Nav position) - REMOVED, now managed by combined button -->
+        <!-- Exit 360 View Button (Top Right, fixed to Nav position) - Visibility controlled by JS -->
+        <button id="btn-360-exit" class="p-2 rounded-full bg-red-600/90 backdrop-blur-md text-white hover:bg-red-500/90 transition shadow-lg opacity-0 pointer-events-none" style="position: fixed; top: 20px; right: 24px; z-index: 1000;">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
+        </button>
     </nav>
     
     <!-- 360 View Toggle Group (Bottom Right) -->
     <div class="toggle-group">
-        <!-- Combined 360 Button -->
-        <button id="btn-360-combined" class="btn-360-combined bg-zinc-800/70 text-white hover:bg-zinc-700/80 space-x-2">
-            <!-- Initial content: 360 View -->
-            <svg id="combined-icon" xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11.412 10.356A8.001 8.001 0 0120 11.5M4 15V9" /></svg>
-            <span id="combined-text" class="text-sm font-medium">360° View</span>
+        <!-- 360 Exit Button (Hidden unless 360 mode is active) -->
+        <button id="btn-360-exit-bottom" class="p-3 rounded-full bg-zinc-700/70 backdrop-blur-md text-white hover:bg-zinc-600/80 transition shadow-lg opacity-0 pointer-events-none">
+             <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
+        </button>
+        
+        <!-- 360 View Toggle Button (Always visible when not in 360 mode) -->
+        <button id="btn-360-toggle" class="z-50 p-3 rounded-full bg-zinc-800/70 backdrop-blur-md text-white hover:bg-zinc-700/80 transition shadow-lg pointer-events-auto flex items-center space-x-2">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11.412 10.356A8.001 8.001 0 0120 11.5M4 15V9" /></svg>
+            <span class="text-sm font-medium">360° View</span>
         </button>
     </div>
     
@@ -1099,73 +1100,52 @@
         // Global state and 360 view management
         let currentTarget = null; 
 
-        // COMBINED 360 BUTTON LOGIC
-        const btnCombined = document.getElementById('btn-360-combined');
-        const combinedIcon = document.getElementById('combined-icon');
-        const combinedText = document.getElementById('combined-text');
-        
-        function updateCombinedButton(enable360) {
-            if (enable360) {
-                // Change to Exit Button (Red Icon)
-                btnCombined.classList.remove('bg-zinc-800/70', 'hover:bg-zinc-700/80', 'space-x-2');
-                btnCombined.classList.add('bg-red-600/90', 'hover:bg-red-500/90');
-                
-                // Set padding to only include the icon size
-                btnCombined.style.padding = '12px';
-                
-                combinedIcon.innerHTML = `<path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />`; // Exit icon
-                combinedText.textContent = ''; // Remove text
-            } else {
-                // Change back to 360 View Button (Neutral/Gray)
-                btnCombined.classList.remove('bg-red-600/90', 'hover:bg-red-500/90');
-                btnCombined.classList.add('bg-zinc-800/70', 'hover:bg-zinc-700/80', 'space-x-2');
-                
-                // Restore padding for text and icon
-                btnCombined.style.padding = '12px';
-
-                combinedIcon.innerHTML = `<path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11.412 10.356A8.001 8.001 0 0120 11.5M4 15V9" />`; // 360 icon
-                combinedText.textContent = '360° View';
-            }
-        }
-
         // Function to handle 360 mode
         function toggle360Mode(enable) {
             is360Mode = enable;
-            
-            updateCombinedButton(enable); // Update combined button appearance
-
             const nav = document.querySelector('nav');
+            const exitButton = document.getElementById('btn-360-exit-bottom');
+            const toggleButton = document.getElementById('btn-360-toggle');
             const overlays = document.querySelectorAll('.main-content-overlay');
             const sections = document.querySelectorAll('.content-section');
             const scrollIndicator = document.querySelector('.scroll-indicator'); 
+            const navExitButton = document.getElementById('btn-360-exit');
             const toggleGroup = document.querySelector('.toggle-group');
 
-            // Toggle UI visibility
-            const elementsToToggle = [nav, ...overlays, ...sections, scrollIndicator]; 
+            // Hide/Show all non-critical UI elements
+            const elementsToToggle = [...overlays, ...sections, scrollIndicator]; 
 
             elementsToToggle.forEach(el => {
                 if (el) {
                     el.style.opacity = enable ? 0 : 1;
                     el.style.pointerEvents = enable ? 'none' : 'auto';
-                    
-                    // CRITICAL FIX: Ensure elements are completely removed from the layout/collision detection
-                    if (enable) {
-                        el.style.display = 'none';
-                    } else {
-                        // Restore display properties based on element type
-                        if (el.classList.contains('content-section')) {
-                            el.style.display = 'flex';
-                        } else if (el.tagName === 'NAV' || el.tagName === 'FOOTER' || el.classList.contains('main-content-overlay') || el.classList.contains('scroll-indicator')) {
-                            el.style.display = 'block';
-                        }
-                    }
                 }
             });
             
+            // Handle nav bar and footer visibility separately
+            if (nav) {
+                nav.style.opacity = enable ? 0 : 1;
+                nav.style.pointerEvents = enable ? 'none' : 'auto';
+            }
             const footer = document.querySelector('footer');
             if (footer) {
                 footer.style.opacity = enable ? 0 : 1;
-                footer.style.display = enable ? 'none' : 'block';
+            }
+
+            // Toggle bottom exit/toggle buttons group
+            if (toggleGroup) {
+                toggleGroup.style.opacity = enable ? 1 : 1;
+                toggleGroup.style.pointerEvents = 'auto'; 
+            }
+            
+            if (exitButton) {
+                exitButton.style.opacity = enable ? 1 : 0;
+                exitButton.style.pointerEvents = enable ? 'auto' : 'none';
+            }
+            
+            if (toggleButton) {
+                 toggleButton.style.opacity = enable ? 0 : 1; 
+                 toggleButton.style.pointerEvents = enable ? 'none' : 'auto';
             }
             
             document.body.style.overflowY = enable ? 'hidden' : 'auto'; // Re-enable scroll on exit
@@ -1190,9 +1170,16 @@
             }
         }
         
-        // Add event listener for the combined button
-        btnCombined?.addEventListener('click', () => {
-            toggle360Mode(!is360Mode);
+        // Add event listeners for 360 buttons
+        document.getElementById('btn-360-toggle')?.addEventListener('click', () => {
+            toggle360Mode(true);
+        });
+        document.getElementById('btn-360-exit-bottom')?.addEventListener('click', () => {
+            toggle360Mode(false);
+        });
+        document.getElementById('btn-360-exit')?.addEventListener('click', () => {
+            // This is the old top button, ensuring it does nothing when disabled
+            if (document.getElementById('btn-360-exit').style.opacity > 0) toggle360Mode(false);
         });
 
 
@@ -1262,7 +1249,6 @@
         };
         let currentSection = 'front';
         const heroContent = document.querySelector('#front .fade-in-section');
-        const scrollIndicator = document.querySelector('.scroll-indicator'); // Get the scroll indicator
 
 
         function updateScroll() {
@@ -1304,7 +1290,7 @@
             setOverlayVisibility(maintenanceAccessOverlay, currentSection === 'specs' && !is360Mode);
             setOverlayVisibility(maintenanceRestartOverlay, currentSection === 'specs' && !is360Mode);
             
-            // NEW: Hero Fade-Out Logic (Affects Hero Content AND Scroll Indicator)
+            // NEW: Hero Fade-Out Logic
             const scrollDistance = window.scrollY;
             const fadeEnd = window.innerHeight * 0.75; // Fade out by 75% of the first viewport
             
@@ -1325,12 +1311,6 @@
                 heroContent.style.opacity = opacity;
                 heroContent.style.pointerEvents = visibility ? 'auto' : 'none';
                 heroContent.style.transform = `translateY(${scrollDistance * 0.5}px)`; // Add slight parallax lift
-            }
-
-            // Apply the same fade to the scroll indicator
-            if (scrollIndicator) {
-                scrollIndicator.style.opacity = opacity;
-                scrollIndicator.style.pointerEvents = visibility ? 'auto' : 'none';
             }
 
         }
