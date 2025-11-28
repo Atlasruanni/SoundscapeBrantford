@@ -16,11 +16,10 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/examples/js/postprocessing/LuminosityHighPassShader.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/examples/js/postprocessing/UnrealBloomPass.js"></script>
     
-    <!-- Google Fonts -->
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <style>
+        /* CHANGE: Global font set to Arial as requested */
         body { 
-            font-family: 'Inter', sans-serif; 
+            font-family: 'Arial', sans-serif; 
             overflow-x: hidden; 
             background-color: #000000; 
             color: #f5f5f7;
@@ -65,13 +64,6 @@
         .glass-card:hover {
             background: rgba(44, 44, 46, 0.7);
             border-color: rgba(255, 255, 255, 0.2);
-        }
-
-        /* Typography Enhancements */
-        /* hero-title class removed from CSS as it's no longer used for the gradient text effect */
-        
-        .dark-text-shadow {
-            /* Text shadow removed as requested */
         }
 
         /* Section titles */
@@ -685,15 +677,23 @@
         fillLight.position.set(-5, 0, 5);
         scene.add(fillLight);
 
-        // --- MATERIALS (UNCHANGED) ---
+        // --- MATERIALS (UPDATED) ---
         const colorYellow = 0xFFB800; 
-        const matBody = new THREE.MeshPhysicalMaterial({ color: colorYellow, roughness: 0.25, metalness: 0.05, clearcoat: 0.2, clearcoatRoughness: 0.1 });
-        const matBlack = new THREE.MeshStandardMaterial({ color: 0x111111, roughness: 0.8, metalness: 0.1 });
+        // CHANGE: Made body matte (high roughness, no clearcoat)
+        const matBody = new THREE.MeshPhysicalMaterial({ color: colorYellow, roughness: 0.9, metalness: 0.0, clearcoat: 0.0 });
+        
+        // CHANGE: Darkened matBlack from 0x111111 to 0x050505 for rims, 3 buttons, and base.
+        const matBlack = new THREE.MeshStandardMaterial({ color: 0x050505, roughness: 0.8, metalness: 0.1 });
+        
         const colorGreen = 0x00A060; 
-        const matCyan = new THREE.MeshPhysicalMaterial({ color: colorGreen, roughness: 0.3, metalness: 0.0, emissive: colorGreen, emissiveIntensity: 3.0 });
+        // CHANGE: Base color to black so it looks black when off, emissive green so it looks green when lit
+        const matCyan = new THREE.MeshPhysicalMaterial({ color: 0x000000, roughness: 0.9, metalness: 0.0, emissive: colorGreen, emissiveIntensity: 3.0, clearcoat: 0.0 });
         const matSteel = new THREE.MeshStandardMaterial({ color: 0x888888, roughness: 0.35, metalness: 0.9 });
         const matRedLED = new THREE.MeshStandardMaterial({ color: 0xFF0000, roughness: 0.1, metalness: 0.0, emissive: 0xFF0000, emissiveIntensity: 8.0 });
-        const matBlackDot = new THREE.MeshStandardMaterial({ color: 0x010101, roughness: 0.9, metalness: 0.1, emissive: 0x000000 });
+        
+        // CHANGE: Increased roughness to 1.0 and metalness to 0.0 to prevent reflection on mic hole/dot
+        const matBlackDot = new THREE.MeshStandardMaterial({ color: 0x010101, roughness: 1.0, metalness: 0.0, emissive: 0x000000 });
+        
         const matGrayPress = new THREE.MeshStandardMaterial({ color: 0xaaaaaa, roughness: 0.8, metalness: 0.1 });
 
         // --- GEOMETRY HELPERS ---
@@ -773,7 +773,8 @@
             }
         }
         const spkTex = new THREE.CanvasTexture(cvs);
-        const spkPlane = new THREE.Mesh(new THREE.PlaneGeometry(1.0, 1.8), new THREE.MeshPhysicalMaterial({ map: spkTex, color: 0x000000, roughness: 0.4, transparent: true, alphaTest: 0.1 }));
+        // CHANGE: Speaker/Mic holes set to roughness 1.0, metalness 0.0 to reflect no light
+        const spkPlane = new THREE.Mesh(new THREE.PlaneGeometry(1.0, 1.8), new THREE.MeshPhysicalMaterial({ map: spkTex, color: 0x000000, roughness: 1.0, metalness: 0.0, clearcoat: 0.0, reflectivity: 0.0, transparent: true, alphaTest: 0.1 }));
         spkPlane.position.set(-0.21, 0, Z_SURFACE + 0.01); 
         deviceGroup.add(spkPlane);
 
@@ -810,7 +811,8 @@
             b.userData.originalMat = p.mat;
             if(p.name === 'RECORD_BUTTON') {
                 const dot = new THREE.Mesh(new THREE.CircleGeometry(0.04, 16), matBlackDot);
-                dot.position.set(0.88/3, -0.66/3, 0.04);
+                // CHANGE: Moved LED more to the right (X: 0.32)
+                dot.position.set(0.32, -0.2, 0.041); 
                 b.add(dot);
                 redDotLED = dot;
             }
@@ -1011,9 +1013,13 @@
 
             // Battery Pulse Effect
             if (currentSection === 'universal') {
-                const pulse = (Math.sin(Date.now() * 0.002) + 1) * 1.5 + 0.1; 
-                matCyan.emissiveIntensity = pulse;
+                // Cycle between 0 (black) and 3 (bright green)
+                const time = Date.now() * 0.003; 
+                // Smooth sine wave mapped to 0 -> 3 range
+                const intensity = ((Math.sin(time) + 1) / 2) * 3.0;
+                matCyan.emissiveIntensity = intensity;
             } else {
+                // Return to stable bright state
                 matCyan.emissiveIntensity += (3.0 - matCyan.emissiveIntensity) * 0.1;
             }
 
