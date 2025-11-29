@@ -294,7 +294,7 @@
                 </div>
                 <p class="text-zinc-300 text-sm leading-relaxed">
                     A single, intuitive dial controls volume and playback using globally recognized symbols.
-                    <span class="text-white block mt-2 font-medium">The central green light pulses to represent battery life and active device status.</span>
+                    <span class="text-white block mt-2 font-medium">The large green button serves as a dynamic battery indicator, the brightness level shows charge status and device health.</span>
                 </p>
                 <div id="universal-overlay" class="mt-8 transition-opacity duration-500">
                     <div id="overlay-controls-container" class="glass-card p-4 pointer-events-auto w-full mx-auto" style="border-radius: 30px; border: none; background: rgba(0,0,0,0.3); backdrop-filter: blur(15px);">
@@ -499,7 +499,8 @@
         const colorGreen = 0x00A060; 
         const matCyan = new THREE.MeshPhysicalMaterial({ color: 0x000000, roughness: 0.9, metalness: 0.0, emissive: colorGreen, emissiveIntensity: 3.0, clearcoat: 0.0 });
         const matSteel = new THREE.MeshStandardMaterial({ color: 0x888888, roughness: 0.35, metalness: 0.9 });
-        const matRedLED = new THREE.MeshStandardMaterial({ color: 0xFF0000, roughness: 0.1, metalness: 0.0, emissive: 0xFF0000, emissiveIntensity: 8.0 });
+        // CHANGE: Removed emissive properties and increased roughness for a "true red" non-lit look
+        const matRedLED = new THREE.MeshStandardMaterial({ color: 0xFF0000, roughness: 0.5, metalness: 0.0 });
         const matBlackDot = new THREE.MeshStandardMaterial({ color: 0x010101, roughness: 1.0, metalness: 0.0, emissive: 0x000000 });
         const matGrayPress = new THREE.MeshStandardMaterial({ color: 0xaaaaaa, roughness: 0.8, metalness: 0.1 });
 
@@ -690,14 +691,18 @@
                 camera.position.z += (tgt.cam.z - camera.position.z) * 0.05;
 
                 if (currentSection === 'view360') {
-                    deviceGroup.rotation.x += (manualRotation.x - deviceGroup.rotation.x) * 0.1;
-                    deviceGroup.rotation.y += (manualRotation.y - deviceGroup.rotation.y) * 0.1;
-                    deviceGroup.rotation.z += (0 - deviceGroup.rotation.z) * 0.1;
+                    // Check if dragging or resetting
+                    // CHANGE: Set reset speed to 0.05 to match the rest of the page animations
+                    const lerpFactor = isDragging ? 0.2 : 0.05; 
+                    
+                    deviceGroup.rotation.x += (manualRotation.x - deviceGroup.rotation.x) * lerpFactor;
+                    deviceGroup.rotation.y += (manualRotation.y - deviceGroup.rotation.y) * lerpFactor;
+                    deviceGroup.rotation.z += (0 - deviceGroup.rotation.z) * lerpFactor;
                 } else {
-                    // CHANGE: Slowed down the reset speed from 0.05 to 0.02 for smoother transition
-                    deviceGroup.rotation.x += (tgt.rot.x - deviceGroup.rotation.x) * 0.02;
-                    deviceGroup.rotation.y += (tgt.rot.y - deviceGroup.rotation.y) * 0.02;
-                    deviceGroup.rotation.z += (tgt.rot.z - deviceGroup.rotation.z) * 0.02;
+                    // CHANGE: Restored reset speed to 0.05 to ensure consistent movement speed with the rest of the page
+                    deviceGroup.rotation.x += (tgt.rot.x - deviceGroup.rotation.x) * 0.05;
+                    deviceGroup.rotation.y += (tgt.rot.y - deviceGroup.rotation.y) * 0.05;
+                    deviceGroup.rotation.z += (tgt.rot.z - deviceGroup.rotation.z) * 0.05;
                     manualRotation.x = 0; manualRotation.y = 0;
                 }
             }
