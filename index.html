@@ -599,7 +599,11 @@
                 else if (ie.name === 'STORY_BUTTON') AudioManager.play('story');
                 else if (ie.name === 'CITY_INFO_BUTTON') AudioManager.play('info');
                 else if (ie.name === 'RECORD_BUTTON') AudioManager.toggleRecord(() => { redDotLED.material = matRedLED; showMessage("Recording...", 50000); }, () => { redDotLED.material = matBlackDot; });
-                else if (ie.name === 'RESTART_BUTTON') location.reload();
+                // CHANGE: Added delay and message for Restart Button click instead of instant reload
+                else if (ie.name === 'RESTART_BUTTON') {
+                    showMessage("System Restarting...", 3000); 
+                    setTimeout(() => location.reload(), 1500);
+                }
                 else if (ie.name === 'BOTTOM_AUX_BUTTON') showMessage("Service Port Accessed.", 2000);
 
                 const oz = ie.position.z; const oy = ie.position.y; const os = ie.scale.clone();
@@ -690,9 +694,10 @@
                     deviceGroup.rotation.y += (manualRotation.y - deviceGroup.rotation.y) * 0.1;
                     deviceGroup.rotation.z += (0 - deviceGroup.rotation.z) * 0.1;
                 } else {
-                    deviceGroup.rotation.x += (tgt.rot.x - deviceGroup.rotation.x) * 0.05;
-                    deviceGroup.rotation.y += (tgt.rot.y - deviceGroup.rotation.y) * 0.05;
-                    deviceGroup.rotation.z += (tgt.rot.z - deviceGroup.rotation.z) * 0.05;
+                    // CHANGE: Slowed down the reset speed from 0.05 to 0.02 for smoother transition
+                    deviceGroup.rotation.x += (tgt.rot.x - deviceGroup.rotation.x) * 0.02;
+                    deviceGroup.rotation.y += (tgt.rot.y - deviceGroup.rotation.y) * 0.02;
+                    deviceGroup.rotation.z += (tgt.rot.z - deviceGroup.rotation.z) * 0.02;
                     manualRotation.x = 0; manualRotation.y = 0;
                 }
             }
