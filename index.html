@@ -17,7 +17,6 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/examples/js/postprocessing/UnrealBloomPass.js"></script>
     
     <style>
-        /* CHANGE: Global font set to Arial as requested */
         body { 
             font-family: 'Arial', sans-serif; 
             overflow-x: hidden; 
@@ -25,10 +24,19 @@
             color: #f5f5f7;
         }
         
-        /* Smooth scrolling */
-        html { scroll-behavior: smooth; }
+        body.noscroll {
+            overflow: hidden;
+        }
 
-        /* Canvas fixed in background */
+        /* CHANGE: Hide UI elements when dragging in 360 view */
+        body.hide-ui > *:not(#canvas-container) {
+            opacity: 0 !important;
+            transition: opacity 0.3s ease;
+            pointer-events: none;
+        }
+        
+        html { scroll-behavior: auto; }
+
         #canvas-container {
             position: fixed;
             top: 0;
@@ -40,19 +48,23 @@
             pointer-events: auto; 
         }
 
-        /* Overlay content */
         .content-section {
             position: relative;
             z-index: 10;
             min-height: 100vh;
             display: flex;
             align-items: center;
-            pointer-events: none; /* Let clicks pass through to canvas by default */
+            pointer-events: none; 
+            opacity: 0; 
+            transition: opacity 0.8s ease-in-out;
         }
         
-        /* Apple-esque Glass Card */
+        .content-section.is-visible {
+            opacity: 1;
+        }
+        
         .glass-card {
-            pointer-events: auto; /* Enable interaction with cards */
+            pointer-events: auto;
             background: rgba(28, 28, 30, 0.6);
             backdrop-filter: blur(30px);
             -webkit-backdrop-filter: blur(30px);
@@ -66,13 +78,11 @@
             border-color: rgba(255, 255, 255, 0.2);
         }
 
-        /* Section titles */
         .section-title {
             letter-spacing: -0.03em;
             text-shadow: 0 4px 10px rgba(0, 0, 0, 0.5); 
         }
 
-        /* Grid Layouts */
         .bento-grid {
             display: grid;
             grid-template-columns: repeat(2, 1fr);
@@ -105,7 +115,6 @@
             transition: opacity 0.5s;
         }
         
-        /* Navigation Blur */
         nav {
             background: rgba(0, 0, 0, 0.5);
             backdrop-filter: blur(20px);
@@ -121,24 +130,23 @@
         }
         .nav-link:hover { color: #fff; }
 
-        /* Audio Start Overlay: Full screen, must be clicked */
         #audio-start-overlay {
             position: fixed;
             top: 0;
             left: 0;
             width: 100%;
             height: 100%;
-            background: #000000; /* Solid black background */
+            background: #000000;
             display: flex;
             justify-content: center;
             align-items: center;
             color: white;
             font-size: 20px;
             font-weight: 500;
-            z-index: 1000; /* High z-index to cover everything */
+            z-index: 1000;
             opacity: 1;
             transition: opacity 0.5s;
-            pointer-events: auto; /* Must be clickable */
+            pointer-events: auto;
             cursor: pointer;
         }
         #audio-start-overlay.hidden {
@@ -146,8 +154,6 @@
              pointer-events: none;
         }
 
-
-        /* Floating Message Box */
         #message-box {
             position: fixed;
             top: 20%;
@@ -165,9 +171,12 @@
             font-size: 14px;
         }
 
+        .cursor-grab { cursor: grab; }
+        .cursor-grabbing { cursor: grabbing; }
+
     </style>
 </head>
-<body class="text-slate-200 antialiased">
+<body class="text-slate-200 antialiased noscroll">
 
     <!-- Loader -->
     <div id="loader" class="loader">
@@ -177,33 +186,29 @@
         </div>
     </div>
     
-    <!-- CHANGE: Full screen overlay for audio start -->
     <div id="audio-start-overlay" class="flex flex-col items-center">
         <svg xmlns="http://www.w3.org/2000/svg" width="60" height="60" viewBox="0 0 24 24" fill="currentColor" class="text-yellow-500 mb-4 animate-pulse"><path d="M12 2C6.477 2 2 6.477 2 12s4.477 10 10 10 10-4.477 10-10S17.523 2 12 2zm0 18c-4.411 0-8-3.589-8-8s3.589-8 8-8 8 3.589 8 8-3.589 8-8 8z"/><path d="M10 8l6 4-6 4V8z"/></svg>
         Tap Anywhere to Start Soundscape
     </div>
 
-    <!-- Feedback Message Box -->
     <div id="message-box"></div>
-
-    <!-- 3D Canvas -->
     <div id="canvas-container"></div>
 
     <!-- Navigation -->
     <nav class="fixed top-0 w-full z-50 px-6 md:px-12 py-4 flex justify-between items-center pointer-events-auto">
-        <!-- CHANGE: BRANTFORD.MIX changed to BRANTFORD.SOUNDSCAPE -->
         <div class="text-lg font-bold tracking-tighter text-white">
             BRANTFORD.<span class="text-yellow-500">SOUNDSCAPE</span>
         </div>
         <div class="hidden md:flex gap-8 font-medium">
-            <a href="#front" class="nav-link">Overview</a>
-            <a href="#functional" class="nav-link">Features</a>
-            <a href="#universal" class="nav-link">Controls</a>
-            <a href="#specs" class="nav-link">Tech Specs</a>
+            <a href="#front" class="nav-link">Main</a>
+            <a href="#functional" class="nav-link">Function</a>
+            <a href="#universal" class="nav-link">Control</a>
+            <a href="#specs" class="nav-link">Access</a>
+            <a href="#view360" class="nav-link text-yellow-500">360° View</a>
         </div>
     </nav>
     
-    <!-- System Restart Overlay: Y: bottom-40, X: left-1/2 (50%) -->
+    <!-- Restart Overlay -->
     <div id="maintenance-overlay" class="fixed bottom-40 left-1/2 transform -translate-x-1/2 p-3 rounded-xl bg-red-900/10 border-red-500/20 transition-opacity duration-500 z-40 opacity-0 pointer-events-none">
         <button id="btn-restart-overlay" class="p-3 rounded-full bg-red-600 hover:bg-red-500 transition duration-200 text-white font-bold text-sm pointer-events-auto flex items-center gap-2" title="System Restart">
             <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11.412 10.356A8.001 8.001 0 0120 11.5M4 15V9" /></svg>
@@ -211,11 +216,9 @@
         </button>
     </div>
 
-    <!-- Section 1: Hero / Overview -->
+    <!-- 1. Main -->
     <section id="front" class="content-section justify-center text-center px-6">
-        <div class="fade-in-section max-w-4xl mx-auto mt-[40vh] md:mt-[35vh]">
-            <!-- Removed Model 2.0 tag here -->
-            <!-- UPDATED: Applying section-title styling (including text shadow) to the hero title -->
+        <div class="max-w-4xl mx-auto mt-[40vh] md:mt-[35vh]">
             <h1 class="section-title text-5xl md:text-8xl font-bold mb-6 text-white">
                 Public Atmosphere.<br>Reimagined.
             </h1>
@@ -226,11 +229,10 @@
         <div class="scroll-indicator text-zinc-500 text-xs font-medium tracking-widest uppercase">Scroll</div>
     </section>
 
-    <!-- Section 2: Functional Keys (Bento Grid Layout) -->
+    <!-- 2. Function -->
     <section id="functional" class="content-section justify-start px-6 md:px-24">
-        <div class="fade-in-section w-full max-w-md">
+        <div class="w-full max-w-md">
             <h2 class="section-title text-4xl font-bold mb-8 text-white">Core Functions.</h2>
-            
             <div class="bento-grid">
                 <!-- Music -->
                 <div class="glass-card p-6 flex flex-col justify-between h-40">
@@ -242,7 +244,6 @@
                         <p class="text-zinc-400 text-xs leading-snug">Curated, calming soundscapes for safer streets.</p>
                     </div>
                 </div>
-
                 <!-- Story -->
                 <div class="glass-card p-6 flex flex-col justify-between h-40">
                      <div class="text-yellow-400 mb-2">
@@ -253,7 +254,6 @@
                         <p class="text-zinc-400 text-xs leading-snug">Local history and culture fostering connection.</p>
                     </div>
                 </div>
-
                 <!-- City Info -->
                 <div class="glass-card p-6 flex flex-col justify-between h-40">
                      <div class="text-yellow-400 mb-2">
@@ -264,7 +264,6 @@
                         <p class="text-zinc-400 text-xs leading-snug">AI-powered updates on weather & events.</p>
                     </div>
                 </div>
-
                 <!-- Record -->
                 <div class="glass-card p-6 flex flex-col justify-between h-40 bg-zinc-800/80 border-zinc-600/30">
                      <div class="text-red-500 mb-2 animate-pulse">
@@ -279,11 +278,10 @@
         </div>
     </section>
 
-    <!-- Section 3: Universal Controls -->
+    <!-- 3. Control -->
     <section id="universal" class="content-section justify-end px-6 md:px-24">
-        <div class="fade-in-section w-full max-w-sm text-right">
+        <div class="w-full max-w-sm text-right">
             <h2 class="section-title text-4xl font-bold mb-6 text-white">Universal Control.</h2>
-            <!-- Tactile Dial Info Card -->
             <div id="tactile-card" class="glass-card p-8 inline-block text-left w-full">
                 <div class="flex items-center gap-4 mb-4">
                     <div class="w-12 h-12 rounded-full bg-yellow-500/20 flex items-center justify-center text-yellow-400">
@@ -298,37 +296,14 @@
                     A single, intuitive dial controls volume and playback using globally recognized symbols.
                     <span class="text-white block mt-2 font-medium">The central green light pulses to represent battery life and active device status.</span>
                 </p>
-                
-                <!-- Universal Control Overlay: Now INSIDE the card, centered below the text content -->
                 <div id="universal-overlay" class="mt-8 transition-opacity duration-500">
                     <div id="overlay-controls-container" class="glass-card p-4 pointer-events-auto w-full mx-auto" style="border-radius: 30px; border: none; background: rgba(0,0,0,0.3); backdrop-filter: blur(15px);">
-                        <!-- Horizontal Layout of Controls -->
                         <div id="overlay-controls" class="flex justify-around items-center space-x-2 text-white">
-                            
-                            <!-- Vol Up (Plus Icon) -->
-                            <button id="btn-vol-up" class="w-12 h-12 p-2 rounded-full hover:bg-white/20 transition duration-200" title="Volume Up">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14"/><path d="M5 12h14"/></svg>
-                            </button>
-
-                            <!-- Last Track (Prev) -->
-                            <button id="btn-prev" class="w-12 h-12 p-2 rounded-full hover:bg-white/20 transition duration-200" title="Previous Track">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="19 20 9 12 19 4 19 20"/><line x1="5" x2="5" y1="19" y2="5"/></svg>
-                            </button>
-                            
-                            <!-- Play/Pause Toggle -->
-                            <button id="btn-play-pause-overlay" class="w-12 h-12 p-2 rounded-full hover:bg-white/20 transition duration-200" title="Play/Pause">
-                                <svg id="play-pause-icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="currentColor" class="text-yellow-500"><path d="M3 22v-20l18 10-18 10z"/></svg>
-                            </button>
-
-                            <!-- Next Track -->
-                            <button id="btn-next" class="w-12 h-12 p-2 rounded-full hover:bg-white/20 transition duration-200" title="Next Track">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 4 15 12 5 20 5 4"/><line x1="19" x2="19" y1="5" y2="19"/></svg>
-                            </button>
-
-                            <!-- Vol Down (Minus Icon) -->
-                            <button id="btn-vol-down" class="w-12 h-12 p-2 rounded-full hover:bg-white/20 transition duration-200" title="Volume Down">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" x2="19" y1="12" y2="12"/></svg>
-                            </button>
+                            <button id="btn-vol-up" class="w-12 h-12 p-2 rounded-full hover:bg-white/20 transition duration-200" title="Volume Up"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14"/><path d="M5 12h14"/></svg></button>
+                            <button id="btn-prev" class="w-12 h-12 p-2 rounded-full hover:bg-white/20 transition duration-200" title="Previous Track"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="19 20 9 12 19 4 19 20"/><line x1="5" x2="5" y1="19" y2="5"/></svg></button>
+                            <button id="btn-play-pause-overlay" class="w-12 h-12 p-2 rounded-full hover:bg-white/20 transition duration-200" title="Play/Pause"><svg id="play-pause-icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="currentColor" class="text-yellow-500"><path d="M3 22v-20l18 10-18 10z"/></svg></button>
+                            <button id="btn-next" class="w-12 h-12 p-2 rounded-full hover:bg-white/20 transition duration-200" title="Next Track"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 4 15 12 5 20 5 4"/><line x1="19" x2="19" y1="5" y2="19"/></svg></button>
+                            <button id="btn-vol-down" class="w-12 h-12 p-2 rounded-full hover:bg-white/20 transition duration-200" title="Volume Down"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" x2="19" y1="12" y2="12"/></svg></button>
                         </div>
                     </div>
                 </div>
@@ -336,13 +311,11 @@
         </div>
     </section>
 
-    <!-- Section 4: Maintenance (Clean Layout) -->
+    <!-- 4. Access -->
     <section id="specs" class="content-section min-h-screen flex flex-col justify-start items-center px-6 pt-32 relative">
-        
-        <!-- Maintenance Alert Style -->
-        <div class="fade-in-section w-full max-w-3xl">
+        <div class="w-full max-w-3xl">
             <div class="glass-card p-1 flex items-center gap-4 bg-red-900/10 border-red-500/20">
-                <div class="bg-red-500/10 p-4 h-full flex items-center rounded-l-[28px]">
+                <div class="bg-red-500/10 p-4 h-full flex items-center rounded-xl">
                     <span class="text-red-500 font-bold text-xs uppercase tracking-wider rotate-180" style="writing-mode: vertical-rl;">Admin</span>
                 </div>
                 <div class="py-4 pr-6">
@@ -353,277 +326,134 @@
                 </div>
             </div>
         </div>
-        
+        <div class="scroll-indicator text-zinc-500 text-xs font-medium tracking-widest uppercase mt-8">Scroll for 360° View</div>
+    </section>
+
+    <!-- 5. 360 Degree View -->
+    <section id="view360" class="content-section justify-center items-end px-6 pb-24 cursor-grab">
+        <div class="text-center mb-12 pointer-events-none">
+            <div class="inline-flex items-center gap-2 bg-white/10 backdrop-blur-md px-6 py-3 rounded-full border border-white/10">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-yellow-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11.412 10.356A8.001 8.001 0 0120 11.5M4 15V9" /></svg>
+                <span class="text-sm font-bold text-white uppercase tracking-wider">Drag to Rotate 360°</span>
+            </div>
+        </div>
         <footer class="absolute bottom-6 w-full text-center text-white/50 text-xs tracking-wider uppercase">
             Designed for Brantford &copy; 2025
         </footer>
     </section>
 
     <script>
-    // Utility function to display temporary messages to the user
     function showMessage(text, duration = 3000) {
         const box = document.getElementById('message-box');
         if (!box) return;
-        
         box.textContent = text;
         box.style.opacity = 1;
-        
-        // Hide after duration
-        setTimeout(() => {
-            box.style.opacity = 0;
-        }, duration);
+        setTimeout(() => { box.style.opacity = 0; }, duration);
     }
     
-    // Global variable to track playback state
     let isPlaying = true; 
     let playPauseIcon = null;
 
-    // Function to update the play/pause icon appearance
     function updatePlayPauseIcon(playing) {
         if (!playPauseIcon) return;
-        if (playing) {
-            // Show Pause icon
-            playPauseIcon.innerHTML = `<path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/>`;
-        } else {
-            // Show Play icon
-            playPauseIcon.innerHTML = `<path d="M3 22v-20l18 10-18 10z"/>`;
-        }
+        playPauseIcon.innerHTML = playing ? 
+            `<path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/>` : 
+            `<path d="M3 22v-20l18 10-18 10z"/>`;
     }
 
-    // Function to handle the actual play/pause toggle
-    function toggleAudioPlayback() {
-        if (isPlaying) {
-            AudioManager.stopBackgroundMusic(); // Only stops background music
-            isPlaying = false;
-            showMessage("Audio Paused.", 2000);
-        } else {
-            AudioManager.play('music'); // Resumes background music
-            isPlaying = true;
-            showMessage("Audio Resumed.", 2000);
-        }
-        updatePlayPauseIcon(isPlaying);
-    }
-
-    // NEW: Function to hide the initial overlay after interaction
-    function hideInitialOverlay() {
-        const overlay = document.getElementById('audio-start-overlay');
-        if (overlay) {
-            overlay.classList.add('hidden');
-        }
-    }
-
-
-    // AUDIO MANAGER (FIXED)
+    // AUDIO MANAGER
     const AudioManager = {
-        trackList: [
-            'jazz-background-music-333352.mp3',
-            'jazz-background-music-338663.mp3',
-            'jazz-background-music-379027.mp3',
-            'jazz-background-music-426859.mp3'
-        ],
-        currentTrackIndex: 0,
-        audioElement: null,
-        sources: {
-            recordBeep: new Audio('https://actions.google.com/sounds/v1/alarms/beep_short.ogg')
-        },
-        current: null,
-        isRecording: false,
-        recorder: null,
-        stream: null,
-        hasInteracted: false,
+        trackList: ['jazz-background-music-333352.mp3', 'jazz-background-music-338663.mp3', 'jazz-background-music-379027.mp3', 'jazz-background-music-426859.mp3'],
+        currentTrackIndex: 0, audioElement: null,
+        sources: { recordBeep: new Audio('https://actions.google.com/sounds/v1/alarms/beep_short.ogg') },
+        current: null, isRecording: false, recorder: null, stream: null, hasInteracted: false,
 
         init() {
             this.audioElement = new Audio();
-            this.audioElement.loop = false; // Set to false to allow 'ended' event to fire
+            this.audioElement.loop = false; 
             this.audioElement.volume = 0.5;
             this.sources.recordBeep.volume = 0.7;
-            
             this.loadTrack(this.currentTrackIndex);
-            
-            // NEW: Auto-advance to the next track on normal end
-            this.audioElement.addEventListener('ended', () => {
-                if (this.current === 'music' && isPlaying) {
-                    this.playNextTrack();
-                }
-            });
+            this.audioElement.addEventListener('ended', () => { if (this.current === 'music' && isPlaying) this.playNextTrack(); });
         },
-
         loadTrack(index) {
             this.currentTrackIndex = (index % this.trackList.length + this.trackList.length) % this.trackList.length;
             this.audioElement.src = this.trackList[this.currentTrackIndex];
             this.audioElement.load();
-            if (isPlaying && this.hasInteracted) {
-                 // Try to resume play if the user hasn't explicitly paused
-                 this.audioElement.play().catch(e => console.log("Track resume failed after source change."));
-            }
+            if (isPlaying && this.hasInteracted) this.audioElement.play().catch(e => console.log("Resume failed"));
         },
-
-        playNextTrack() {
-            this.loadTrack(this.currentTrackIndex + 1);
-            showMessage(`Next Track: Playing Track ${this.currentTrackIndex + 1}`, 2000);
-        },
-
-        playPrevTrack() {
-            this.loadTrack(this.currentTrackIndex - 1);
-            showMessage(`Previous Track: Playing Track ${this.currentTrackIndex + 1}`, 2000);
-        },
-
-        volumeUp() {
-            this.audioElement.volume = Math.min(1.0, this.audioElement.volume + 0.1);
-            showMessage(`Volume: ${Math.round(this.audioElement.volume * 100)}%`, 1000);
-        },
-
-        volumeDown() {
-            this.audioElement.volume = Math.max(0.0, this.audioElement.volume - 0.1);
-            showMessage(`Volume: ${Math.round(this.audioElement.volume * 100)}%`, 1000);
-        },
-
-        startBackground() {
-            if(!this.hasInteracted) {
-                this.hasInteracted = true;
-                hideInitialOverlay(); // Hide the overlay on first interaction
-                this.play('music');
-            }
-        },
-
-        stopBackgroundMusic() {
-            this.audioElement.pause();
-            isPlaying = false;
-            updatePlayPauseIcon(isPlaying);
-        },
-
-        stopAll() {
-            // Stop all current playback (music and TTS)
-            this.audioElement.pause();
-            window.speechSynthesis.cancel();
-            this.current = null;
-            isPlaying = false;
-            updatePlayPauseIcon(isPlaying);
-        },
-
+        playNextTrack() { this.loadTrack(this.currentTrackIndex + 1); showMessage(`Next Track: ${this.currentTrackIndex + 1}`, 2000); },
+        playPrevTrack() { this.loadTrack(this.currentTrackIndex - 1); showMessage(`Prev Track: ${this.currentTrackIndex + 1}`, 2000); },
+        volumeUp() { this.audioElement.volume = Math.min(1.0, this.audioElement.volume + 0.1); showMessage(`Vol: ${Math.round(this.audioElement.volume * 100)}%`, 1000); },
+        volumeDown() { this.audioElement.volume = Math.max(0.0, this.audioElement.volume - 0.1); showMessage(`Vol: ${Math.round(this.audioElement.volume * 100)}%`, 1000); },
+        startBackground() { if(!this.hasInteracted) { this.hasInteracted = true; hideInitialOverlay(); this.play('music'); } },
+        stopBackgroundMusic() { this.audioElement.pause(); isPlaying = false; updatePlayPauseIcon(false); },
+        stopAll() { this.audioElement.pause(); window.speechSynthesis.cancel(); this.current = null; isPlaying = false; updatePlayPauseIcon(false); },
         play(type) {
             if(this.isRecording) return;
-            
-            // Handle background music play/resume logic
             if (type === 'music') {
-                 // NEW MUSIC LOGIC: If music is already playing, do nothing
                  if (this.current === 'music' && !this.audioElement.paused) return; 
-                 
-                 // If TTS/Story/Info is active, stop it immediately.
-                 if (this.current === 'story' || this.current === 'info') {
-                     window.speechSynthesis.cancel();
-                 }
-
+                 if (this.current === 'story' || this.current === 'info') window.speechSynthesis.cancel();
                  this.audioElement.currentTime = 0; 
-                 this.audioElement.play().catch(e => {
-                     console.error("Audio play failed for Background Music:", e);
-                     showMessage("Audio playback restricted. Please ensure you have interacted with the page.", 6000);
-                 }); 
-                 this.current = 'music';
-                 isPlaying = true;
-                 updatePlayPauseIcon(isPlaying);
-                 return;
+                 this.audioElement.play().catch(e => showMessage("Audio restricted. Interact first.", 3000)); 
+                 this.current = 'music'; isPlaying = true; updatePlayPauseIcon(true); return;
             }
-
-            // Handle functional key audio (TTS, Story, Info). 
-            // If a new function is clicked, PAUSE EVERYTHING else and play the new one.
-            this.stopAll(); // Stops background music and TTS/Info/Story
-            
-            if (type === 'story') {
-                const text = "Welcome to Brantford history. In 1874, Alexander Graham Bell invented the telephone right here. The Bell Homestead is a national historic site honoring this breakthrough.";
+            this.stopAll();
+            if (type === 'story' || type === 'info') {
+                const text = type === 'story' ? "Welcome to Brantford history..." : "Brantford City Update...";
                 const u = new SpeechSynthesisUtterance(text);
-                u.lang = 'en-US'; 
                 window.speechSynthesis.speak(u);
-                this.current = 'story';
-                // Resume background music when TTS finishes
+                this.current = type;
                 u.onend = () => this.play('music'); 
-            } else if (type === 'info') {
-                const text = "Brantford City Update. Current temperature is 14 degrees Celsius. Road work on Colborne Street is expected to finish by Friday. Have a safe walk.";
-                const u = new SpeechSynthesisUtterance(text);
-                u.lang = 'en-US'; 
-                window.speechSynthesis.speak(u);
-                this.current = 'info';
-                // Resume background music when TTS finishes
-                u.onend = () => this.play('music');
             }
         },
-
         async toggleRecord(onStart, onStop) {
             if (this.isRecording) {
-                // STOP RECORDING
-                if(this.recorder && this.recorder.state !== 'inactive') {
-                    this.recorder.stop();
-                }
-                if (this.stream) {
-                    this.stream.getTracks().forEach(track => track.stop());
-                }
-                this.isRecording = false;
-                onStop(); // Red dot to black
-                this.play('music'); // **Music continues**
-                console.log("Recording stopped. Music resumed.");
+                if(this.recorder && this.recorder.state !== 'inactive') this.recorder.stop();
+                if (this.stream) this.stream.getTracks().forEach(track => track.stop());
+                this.isRecording = false; onStop(); this.play('music');
             } else {
-                // START RECORDING
-                this.stopAll(); // **Pause all other audio (including music)**
-                this.sources.recordBeep.currentTime = 0;
-                this.sources.recordBeep.play(); // Play SFX before mic request
-
+                this.stopAll(); this.sources.recordBeep.currentTime = 0; this.sources.recordBeep.play();
                 try {
-                    // Request microphone access
                     this.stream = await navigator.mediaDevices.getUserMedia({ audio: true });
                     this.recorder = new MediaRecorder(this.stream);
                     this.recorder.start();
-                    this.isRecording = true;
-                    onStart(); // Black dot to red
-                    console.log("Recording started. Waiting for second click to stop.");
-                } catch (e) {
-                    // Handle mic refusal/failure gracefully
-                    onStop();
-                    // Display user-friendly message
-                    if (e.name === "NotAllowedError" || e.name === "Permission denied") {
-                        showMessage("Recording failed: Microphone access was denied by the browser.", 4000);
-                    } else {
-                        showMessage("Recording failed due to a device error.", 4000);
-                    }
-                    console.error("Microphone access denied or failed. Resuming music.", e);
-                    this.play('music');
-                }
+                    this.isRecording = true; onStart();
+                } catch (e) { onStop(); showMessage("Microphone access denied.", 4000); this.play('music'); }
             }
         }
     };
 
-    // WRAPPED IN IIFE
+    function toggleAudioPlayback() {
+        if (isPlaying) { AudioManager.stopBackgroundMusic(); isPlaying = false; showMessage("Paused", 1000); }
+        else { AudioManager.play('music'); isPlaying = true; showMessage("Resumed", 1000); }
+    }
+    // CHANGE: Update to remove noscroll class from body
+    function hideInitialOverlay() {
+        const overlay = document.getElementById('audio-start-overlay');
+        if (overlay) overlay.classList.add('hidden');
+        document.body.classList.remove('noscroll');
+    }
+
     (function() {
         AudioManager.init();
 
-        // --- SCROLL OBSERVER FOR FADE IN EFFECTS ---
-        const observerOptions = {
-            root: null,
-            rootMargin: '0px',
-            threshold: 0.1
-        };
-
-        const observer = new IntersectionObserver((entries, observer) => {
-            entries.forEach(entry => {
-                if (entry.isIntersecting) {
-                    entry.target.classList.add('is-visible');
-                }
+        // --- SCROLL OBSERVER (UPDATED FOR FADE IN/OUT) ---
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => { 
+                // Toggle is-visible based on intersection state to allow fade out
+                entry.target.classList.toggle('is-visible', entry.isIntersecting);
             });
-        }, observerOptions);
+        }, { threshold: 0.1 });
+        // Select all direct children that are 'fade-in-section' or the main container inside section
+        document.querySelectorAll('.content-section').forEach(section => observer.observe(section));
 
-        document.querySelectorAll('.fade-in-section').forEach(section => {
-            observer.observe(section);
-        });
-
-        // --- THREE.JS SCENE CONFIGURATION ---
+        // --- THREE.JS CONFIG ---
         const container = document.getElementById('canvas-container');
         if(container.firstChild) container.removeChild(container.firstChild);
-
-        const scene = new THREE.Scene();
-        scene.background = new THREE.Color(0x000000); 
-
+        const scene = new THREE.Scene(); scene.background = new THREE.Color(0x000000); 
         const camera = new THREE.PerspectiveCamera(35, window.innerWidth / window.innerHeight, 0.1, 100);
         camera.position.set(0, 0, 10); 
-        
         const renderer = new THREE.WebGLRenderer({ alpha: false, antialias: true });
         renderer.setSize(window.innerWidth, window.innerHeight);
         renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
@@ -633,331 +463,191 @@
         renderer.outputEncoding = THREE.sRGBEncoding;
         container.appendChild(renderer.domElement);
         
-        // --- POST-PROCESSING ---
         let composer, bloomPass;
         function initPostProcessing() {
             if (typeof THREE.EffectComposer === 'undefined') return;
-            
             composer = new THREE.EffectComposer(renderer);
             composer.addPass(new THREE.RenderPass(scene, camera));
-
-            bloomPass = new THREE.UnrealBloomPass(
-                new THREE.Vector2(window.innerWidth, window.innerHeight),
-                1.5, 0.3, 0.8
-            );
+            bloomPass = new THREE.UnrealBloomPass(new THREE.Vector2(window.innerWidth, window.innerHeight), 1.5, 0.3, 0.8);
             composer.addPass(bloomPass);
             composer.setSize(window.innerWidth, window.innerHeight);
         }
         initPostProcessing();
 
-        // --- INTERACTIVITY SETUP ---
         let raycaster = new THREE.Raycaster();
         let mouse = new THREE.Vector2();
         let clickableObjects = [];
         let redDotLED = null;
+        let isDragging = false;
+        let previousMousePosition = { x: 0, y: 0 };
+        let manualRotation = { x: 0, y: 0 };
 
-        // --- LIGHTING ---
-        const ambientLight = new THREE.AmbientLight(0xffffff, 0.15);
-        scene.add(ambientLight);
-
-        const mainLight = new THREE.DirectionalLight(0xffffff, 1.5);
-        mainLight.position.set(5, 5, 10);
-        mainLight.castShadow = true;
-        mainLight.shadow.bias = -0.0001;
-        mainLight.shadow.mapSize.width = 2048;
-        mainLight.shadow.mapSize.height = 2048;
-        scene.add(mainLight);
-
-        const topLight = new THREE.SpotLight(0xffffff, 3.0);
-        topLight.position.set(0, 10, 0);
-        topLight.lookAt(0,0,0);
-        scene.add(topLight);
-
-        const fillLight = new THREE.PointLight(0xffaa00, 0.4);
-        fillLight.position.set(-5, 0, 5);
-        scene.add(fillLight);
-
-        // --- MATERIALS (UPDATED) ---
-        const colorYellow = 0xFFB800; 
-        // CHANGE: Made body matte (high roughness, no clearcoat)
-        const matBody = new THREE.MeshPhysicalMaterial({ color: colorYellow, roughness: 0.9, metalness: 0.0, clearcoat: 0.0 });
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.15); scene.add(ambientLight);
+        const mainLight = new THREE.DirectionalLight(0xffffff, 1.5); mainLight.position.set(5, 5, 10); mainLight.castShadow = true; scene.add(mainLight);
+        const topLight = new THREE.SpotLight(0xffffff, 3.0); topLight.position.set(0, 10, 0); scene.add(topLight);
+        const fillLight = new THREE.PointLight(0xffaa00, 0.4); fillLight.position.set(-5, 0, 5); scene.add(fillLight);
         
-        // CHANGE: Darkened matBlack from 0x111111 to 0x050505 for rims, 3 buttons, and base.
+        // CHANGE: Add BOTTOM light to make undercarriage visible
+        const bottomLight = new THREE.PointLight(0x444444, 1.0);
+        bottomLight.position.set(0, -10, 0);
+        scene.add(bottomLight);
+
+        // MATERIALS
+        const colorYellow = 0xFFA000; 
+        const matBody = new THREE.MeshPhysicalMaterial({ color: colorYellow, roughness: 1.0, metalness: 0.0, clearcoat: 0.0 });
         const matBlack = new THREE.MeshStandardMaterial({ color: 0x050505, roughness: 0.8, metalness: 0.1 });
-        
         const colorGreen = 0x00A060; 
-        // CHANGE: Base color to black so it looks black when off, emissive green so it looks green when lit
         const matCyan = new THREE.MeshPhysicalMaterial({ color: 0x000000, roughness: 0.9, metalness: 0.0, emissive: colorGreen, emissiveIntensity: 3.0, clearcoat: 0.0 });
         const matSteel = new THREE.MeshStandardMaterial({ color: 0x888888, roughness: 0.35, metalness: 0.9 });
         const matRedLED = new THREE.MeshStandardMaterial({ color: 0xFF0000, roughness: 0.1, metalness: 0.0, emissive: 0xFF0000, emissiveIntensity: 8.0 });
-        
-        // CHANGE: Increased roughness to 1.0 and metalness to 0.0 to prevent reflection on mic hole/dot
         const matBlackDot = new THREE.MeshStandardMaterial({ color: 0x010101, roughness: 1.0, metalness: 0.0, emissive: 0x000000 });
-        
         const matGrayPress = new THREE.MeshStandardMaterial({ color: 0xaaaaaa, roughness: 0.8, metalness: 0.1 });
 
-        // --- GEOMETRY HELPERS ---
+        // GEOMETRY
         function createRoundedRect(w, h, r) {
             const shape = new THREE.Shape();
-            shape.moveTo(-w/2 + r, h/2);
-            shape.lineTo(w/2 - r, h/2);
-            shape.quadraticCurveTo(w/2, h/2, w/2, h/2 - r);
-            shape.lineTo(w/2, -h/2 + r);
-            shape.quadraticCurveTo(w/2, -h/2, w/2 - r, -h/2);
-            shape.lineTo(-w/2 + r, -h/2);
-            shape.quadraticCurveTo(-w/2, -h/2, -w/2, -h/2 + r);
-            shape.lineTo(-w/2, h/2 - r);
-            shape.quadraticCurveTo(-w/2, h/2, -w/2 + r, h/2);
+            shape.moveTo(-w/2 + r, h/2); shape.lineTo(w/2 - r, h/2); shape.quadraticCurveTo(w/2, h/2, w/2, h/2 - r);
+            shape.lineTo(w/2, -h/2 + r); shape.quadraticCurveTo(w/2, -h/2, w/2 - r, -h/2); shape.lineTo(-w/2 + r, -h/2);
+            shape.quadraticCurveTo(-w/2, -h/2, -w/2, -h/2 + r); shape.lineTo(-w/2, h/2 - r); shape.quadraticCurveTo(-w/2, h/2, -w/2 + r, h/2);
             return shape;
         }
 
-        // --- BUILD DEVICE ---
         const deviceGroup = new THREE.Group();
-
-        // Chassis
-        const chassisShape = createRoundedRect(5.75, 2.2, 0.55);
-        const chassisGeo = new THREE.ExtrudeGeometry(chassisShape, { depth: 0.6, bevelEnabled: true, bevelThickness: 0.08, bevelSize: 0.08, bevelSegments: 6 });
-        chassisGeo.center();
-        const chassis = new THREE.Mesh(chassisGeo, matBody);
-        deviceGroup.add(chassis);
+        const chassis = new THREE.Mesh(new THREE.ExtrudeGeometry(createRoundedRect(5.75, 2.2, 0.55), { depth: 0.6, bevelEnabled: true, bevelThickness: 0.08, bevelSize: 0.08, bevelSegments: 6 }), matBody);
+        chassis.geometry.center(); deviceGroup.add(chassis);
         const Z_SURFACE = 0.38; 
 
-        // Left Dial (Universal Controls)
-        const dialGroup = new THREE.Group();
-        dialGroup.position.set(-1.75, 0, Z_SURFACE);
-        
-        const rimGroup = new THREE.Group();
-        rimGroup.name = 'VOLUME_DIAL_RIM'; 
-        rimGroup.userData.originalMat = matBlack;
-        dialGroup.add(rimGroup);
-        clickableObjects.push(rimGroup);
+        // Left Dial
+        const dialGroup = new THREE.Group(); dialGroup.position.set(-1.75, 0, Z_SURFACE);
+        const rimGroup = new THREE.Group(); rimGroup.name = 'VOLUME_DIAL_RIM'; rimGroup.userData.originalMat = matBlack; dialGroup.add(rimGroup); clickableObjects.push(rimGroup);
+        const dish = new THREE.Mesh(new THREE.CylinderGeometry(0.9, 1.0, 0.15, 64), matBlack); dish.rotation.x = Math.PI/2; dish.position.z = -0.05; rimGroup.add(dish);
+        const slope = new THREE.Mesh(new THREE.CylinderGeometry(0.56, 0.9, 0.2, 64, 1, true), matBlack); slope.rotation.x = Math.PI/2; slope.position.z = 0.0; rimGroup.add(slope);
+        const btn = new THREE.Mesh(new THREE.CylinderGeometry(0.54, 0.54, 0.1, 64), matCyan); btn.rotation.x = Math.PI/2; btn.position.z = 0.02; btn.name = 'PLAY_PAUSE_BUTTON'; btn.userData.originalMat = matCyan;
+        dialGroup.add(btn); clickableObjects.push(btn); deviceGroup.add(dialGroup);
 
-        const dishGeo = new THREE.CylinderGeometry(0.9, 1.0, 0.15, 64);
-        const dish = new THREE.Mesh(dishGeo, matBlack);
-        dish.rotation.x = Math.PI/2;
-        dish.position.z = -0.05;
-        rimGroup.add(dish);
-
-        const slopeGeo = new THREE.CylinderGeometry(0.56, 0.9, 0.2, 64, 1, true);
-        const slope = new THREE.Mesh(slopeGeo, matBlack);
-        slope.rotation.x = Math.PI/2;
-        slope.position.z = 0.0;
-        rimGroup.add(slope);
-
-        const btnGeo = new THREE.CylinderGeometry(0.54, 0.54, 0.1, 64);
-        const btn = new THREE.Mesh(btnGeo, matCyan);
-        btn.rotation.x = Math.PI/2;
-        btn.position.z = 0.02;
-        btn.name = 'PLAY_PAUSE_BUTTON'; 
-        btn.userData.originalMat = matCyan;
-        dialGroup.add(btn); 
-        clickableObjects.push(btn);
-        deviceGroup.add(dialGroup);
-
-        // Center Speaker
-        const cvs = document.createElement('canvas');
-        cvs.width = 256; cvs.height = 512;
-        const ctx = cvs.getContext('2d');
-        ctx.fillStyle = '#000000';
-        const gridY = 20; const radius = 7; const padX = 10; const padY = 10;
-        const stepY = (cvs.height - padY*2) / gridY;
-        const baseStepX = (cvs.width - padX*2) / 9;
+        // Speaker
+        const cvs = document.createElement('canvas'); cvs.width = 256; cvs.height = 512; const ctx = cvs.getContext('2d'); ctx.fillStyle = '#000000';
+        const gridY = 20; const radius = 7; const padX = 10; const padY = 10; const stepY = (cvs.height - padY*2) / gridY; const baseStepX = (cvs.width - padX*2) / 9;
         for(let y=0; y<=gridY; y++) {
-            const numDots = (y % 2 === 0) ? 9 : 10; 
-            const rowWidth = baseStepX * (numDots - 1);
-            const centeringOffset = ((cvs.width - padX*2) - rowWidth) / 2;
-            for(let x=0; x<numDots; x++) {
-                ctx.beginPath();
-                ctx.arc(padX + centeringOffset + x * baseStepX, padY + y*stepY, radius, 0, Math.PI*2);
-                ctx.fill();
-            }
+            const numDots = (y % 2 === 0) ? 9 : 10; const rowWidth = baseStepX * (numDots - 1); const centeringOffset = ((cvs.width - padX*2) - rowWidth) / 2;
+            for(let x=0; x<numDots; x++) { ctx.beginPath(); ctx.arc(padX + centeringOffset + x * baseStepX, padY + y*stepY, radius, 0, Math.PI*2); ctx.fill(); }
         }
         const spkTex = new THREE.CanvasTexture(cvs);
-        // CHANGE: Speaker/Mic holes set to roughness 1.0, metalness 0.0 to reflect no light
         const spkPlane = new THREE.Mesh(new THREE.PlaneGeometry(1.0, 1.8), new THREE.MeshPhysicalMaterial({ map: spkTex, color: 0x000000, roughness: 1.0, metalness: 0.0, clearcoat: 0.0, reflectivity: 0.0, transparent: true, alphaTest: 0.1 }));
-        spkPlane.position.set(-0.21, 0, Z_SURFACE + 0.01); 
-        deviceGroup.add(spkPlane);
+        spkPlane.position.set(-0.21, 0, Z_SURFACE + 0.01); deviceGroup.add(spkPlane);
 
-        // Right Button Cluster (Functional Keys)
-        const padGroup = new THREE.Group();
-        padGroup.position.set(1.55, 0, Z_SURFACE); 
-        const hsShape = createRoundedRect(2.24, 1.74, 0.25);
-        const hsGeo = new THREE.ExtrudeGeometry(hsShape, { depth: 0.05, bevelEnabled: false});
-        hsGeo.center();
-        const hs = new THREE.Mesh(hsGeo, matBlack);
-        hs.position.z = 0.02;
-        padGroup.add(hs);
-
-        const btnShape = createRoundedRect(0.88, 0.66, 0.12);
-        const btnGeom = new THREE.ExtrudeGeometry(btnShape, { depth: 0.02, bevelEnabled: true, bevelSize: 0.03, bevelThickness: 0.03 });
-        btnGeom.center();
-        
-        const gapX = (2.24 - 2 * 0.88) / 3;
-        const gapY = (1.74 - 2 * 0.66) / 3;
-        const X_OFFSET = (0.88 / 2) + (gapX / 2);
-        const Y_OFFSET = (0.66 / 2) + (gapY / 2);
-        
-        const positions = [
-            { x: -X_OFFSET, y: Y_OFFSET, mat: matBlack, name: 'MUSIC_BUTTON' },
-            { x: X_OFFSET, y: Y_OFFSET, mat: matBlack, name: 'STORY_BUTTON' },
-            { x: -X_OFFSET, y: -Y_OFFSET, mat: matBlack, name: 'CITY_INFO_BUTTON' },
-            { x: X_OFFSET, y: -Y_OFFSET, mat: matSteel, name: 'RECORD_BUTTON' }
-        ];
-
+        // Buttons
+        const padGroup = new THREE.Group(); padGroup.position.set(1.55, 0, Z_SURFACE); 
+        const hs = new THREE.Mesh(new THREE.ExtrudeGeometry(createRoundedRect(2.24, 1.74, 0.25), { depth: 0.05, bevelEnabled: false}), matBlack); hs.geometry.center(); hs.position.z = 0.02; padGroup.add(hs);
+        const btnGeom = new THREE.ExtrudeGeometry(createRoundedRect(0.88, 0.66, 0.12), { depth: 0.02, bevelEnabled: true, bevelSize: 0.03, bevelThickness: 0.03 }); btnGeom.center();
+        const gapX = (2.24 - 2 * 0.88) / 3; const gapY = (1.74 - 2 * 0.66) / 3; const X_OFFSET = (0.88 / 2) + (gapX / 2); const Y_OFFSET = (0.66 / 2) + (gapY / 2);
+        const positions = [{ x: -X_OFFSET, y: Y_OFFSET, mat: matBlack, name: 'MUSIC_BUTTON' }, { x: X_OFFSET, y: Y_OFFSET, mat: matBlack, name: 'STORY_BUTTON' }, { x: -X_OFFSET, y: -Y_OFFSET, mat: matBlack, name: 'CITY_INFO_BUTTON' }, { x: X_OFFSET, y: -Y_OFFSET, mat: matSteel, name: 'RECORD_BUTTON' }];
         positions.forEach((p) => {
-            const b = new THREE.Mesh(btnGeom, p.mat);
-            b.position.set(p.x, p.y, 0.04);
-            b.name = p.name;
-            b.userData.originalMat = p.mat;
-            if(p.name === 'RECORD_BUTTON') {
-                const dot = new THREE.Mesh(new THREE.CircleGeometry(0.04, 16), matBlackDot);
-                // CHANGE: Moved LED more to the right (X: 0.32)
-                dot.position.set(0.32, -0.2, 0.041); 
-                b.add(dot);
-                redDotLED = dot;
-            }
-            padGroup.add(b);
-            clickableObjects.push(b);
+            const b = new THREE.Mesh(btnGeom, p.mat); b.position.set(p.x, p.y, 0.04); b.name = p.name; b.userData.originalMat = p.mat;
+            if(p.name === 'RECORD_BUTTON') { const dot = new THREE.Mesh(new THREE.CircleGeometry(0.04, 16), matBlackDot); dot.position.set(0.3, -0.2, 0.041); b.add(dot); redDotLED = dot; }
+            padGroup.add(b); clickableObjects.push(b);
         });
         deviceGroup.add(padGroup);
         
-        // Restart Button (Bottom Face)
-        const bottomBtnShape = createRoundedRect(1.0, 0.2, 0.08);
-        const bottomBtnGeo = new THREE.ExtrudeGeometry(bottomBtnShape, { depth: 0.02, bevelEnabled: true, bevelSize: 0.03, bevelThickness: 0.03 });
-        bottomBtnGeo.center();
-        const bottomButton = new THREE.Mesh(bottomBtnGeo, matBlack);
-        bottomButton.rotation.x = THREE.MathUtils.degToRad(-90);
-        bottomButton.position.set(0, -1.1, 0.3 - 0.1);
-        bottomButton.name = 'RESTART_BUTTON';
-        bottomButton.userData.originalMat = matBlack;
-        chassis.add(bottomButton);
-        clickableObjects.push(bottomButton);
+        // Restart Button (Shifted Center)
+        const bottomButton = new THREE.Mesh(new THREE.ExtrudeGeometry(createRoundedRect(1.0, 0.2, 0.08), { depth: 0.02, bevelEnabled: true, bevelSize: 0.03, bevelThickness: 0.03 }), matBlack);
+        bottomButton.geometry.center(); bottomButton.rotation.x = THREE.MathUtils.degToRad(-90); 
+        // CHANGE: Shifted restart button back to the right to make room for the centered aux button
+        bottomButton.position.set(1.5, -1.1, 0.3 - 0.1); 
+        bottomButton.name = 'RESTART_BUTTON'; bottomButton.userData.originalMat = matBlack;
+        chassis.add(bottomButton); clickableObjects.push(bottomButton);
+
+        // NEW: Bottom Aux Button (Centered, Right)
+        // CHANGE: Used ExtrudeGeometry with rounded rect shape to match functional buttons
+        // CHANGE: Reverted width to 0.88, made it slimmer by reducing height to 0.3 and radius to 0.08
+        const bottomAuxGeo = new THREE.ExtrudeGeometry(createRoundedRect(0.88, 0.3, 0.08), { depth: 0.02, bevelEnabled: true, bevelSize: 0.03, bevelThickness: 0.03 });
+        bottomAuxGeo.center();
+        const botAuxBtn = new THREE.Mesh(bottomAuxGeo, matBlack); // Uses matBlack (same as rim/3 buttons)
+        botAuxBtn.rotation.x = THREE.MathUtils.degToRad(90); // Face down
+        // CHANGE: Moved to center (0)
+        botAuxBtn.position.set(0, -1.15, 0); 
+        botAuxBtn.name = 'BOTTOM_AUX_BUTTON';
+        botAuxBtn.userData.originalMat = matBlack;
+        chassis.add(botAuxBtn);
+        clickableObjects.push(botAuxBtn);
 
         scene.add(deviceGroup);
 
-        // --- INTERACTION LOGIC ---
         function onPointerDown(event) {
-            // CRITICAL: Start background audio on first interaction
-            AudioManager.startBackground();
+            if (currentSection === 'view360') { 
+                isDragging = true; 
+                previousMousePosition = { x: event.clientX, y: event.clientY }; 
+                document.getElementById('view360').classList.add('cursor-grabbing'); 
+                document.getElementById('view360').classList.remove('cursor-grab'); 
+                // CHANGE: Hide UI on drag start
+                document.body.classList.add('hide-ui');
+            }
 
-            mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
-            mouse.y = - (event.clientY / window.innerHeight) * 2 + 1;
+            AudioManager.startBackground();
+            mouse.x = (event.clientX / window.innerWidth) * 2 - 1; mouse.y = - (event.clientY / window.innerHeight) * 2 + 1;
             raycaster.setFromCamera(mouse, camera);
             const intersects = raycaster.intersectObjects(clickableObjects, true);
-
             if (intersects.length > 0) {
-                let interactiveElement = intersects[0].object;
-                
-                // Get the intersection point in the object's local space for accurate quadrant detection
-                const intersection = intersects[0];
-                const localPoint = intersection.point.clone();
-                interactiveElement.worldToLocal(localPoint);
-
-                // Check if the click occurred on the 3D dial rim
-                if (interactiveElement.parent && interactiveElement.parent.name === 'VOLUME_DIAL_RIM') {
-                    // Treat the rim group itself as the interactive element for visual feedback
-                    interactiveElement = interactiveElement.parent;
-                    
-                    const dialCenter = new THREE.Vector3(0, 0, 0); // Dial center in dialGroup local space
-                    const relativeX = localPoint.x - dialCenter.x;
-                    const relativeY = localPoint.y - dialCenter.y;
-                    
-                    // Use a stronger vertical bias to ensure the bottom quadrant is easily clickable
-                    const isHorizontal = Math.abs(relativeX) > Math.abs(relativeY) * 0.7; // Reduced sensitivity for X axis
-
-                    if (isHorizontal) {
-                        if (relativeX > 0) {
-                            AudioManager.playNextTrack(); // Right
-                        } else {
-                            AudioManager.playPrevTrack(); // Left
-                        }
-                    } else {
-                        // Vertical checks (Top/Bottom)
-                        if (relativeY > 0) {
-                            AudioManager.volumeUp(); // Top
-                        } else {
-                            // FIX: Ensure Bottom Quadrant triggers Volume Down
-                            AudioManager.volumeDown(); // Bottom 
-                        }
-                    }
+                let ie = intersects[0].object;
+                const intersection = intersects[0]; const localPoint = intersection.point.clone(); ie.worldToLocal(localPoint);
+                if (ie.parent && ie.parent.name === 'VOLUME_DIAL_RIM') {
+                    ie = ie.parent; const relX = localPoint.x; const relY = localPoint.y;
+                    if (Math.abs(relX) > Math.abs(relY) * 0.7) { if (relX > 0) AudioManager.playNextTrack(); else AudioManager.playPrevTrack(); } else { if (relY > 0) AudioManager.volumeUp(); else AudioManager.volumeDown(); }
                 } 
-                
-                // Check if the click was on the central play/pause button
-                else if (interactiveElement.name === 'PLAY_PAUSE_BUTTON') {
-                    toggleAudioPlayback();
-                }
+                else if (ie.name === 'PLAY_PAUSE_BUTTON') toggleAudioPlayback();
+                else if (ie.name === 'MUSIC_BUTTON') AudioManager.play('music');
+                else if (ie.name === 'STORY_BUTTON') AudioManager.play('story');
+                else if (ie.name === 'CITY_INFO_BUTTON') AudioManager.play('info');
+                else if (ie.name === 'RECORD_BUTTON') AudioManager.toggleRecord(() => { redDotLED.material = matRedLED; showMessage("Recording...", 50000); }, () => { redDotLED.material = matBlackDot; });
+                else if (ie.name === 'RESTART_BUTTON') location.reload();
+                else if (ie.name === 'BOTTOM_AUX_BUTTON') showMessage("Service Port Accessed.", 2000);
 
-                // Handle core buttons or special buttons
-                else if (interactiveElement.name === 'MUSIC_BUTTON') AudioManager.play('music');
-                else if (interactiveElement.name === 'STORY_BUTTON') AudioManager.play('story');
-                else if (interactiveElement.name === 'CITY_INFO_BUTTON') AudioManager.play('info');
-                else if (interactiveElement.name === 'RECORD_BUTTON') {
-                    AudioManager.toggleRecord(
-                        () => { 
-                            // ON START: Red LED ON
-                            redDotLED.material = matRedLED;
-                            showMessage("Recording... Click again to stop.", 50000); 
-                        }, 
-                        () => { 
-                            // ON STOP: Black LED OFF
-                            redDotLED.material = matBlackDot; 
-                        } 
-                    );
-                } else if (interactiveElement.name === 'RESTART_BUTTON') {
-                    location.reload();
-                }
-
-                // Apply visual press for all interactive elements (dial rim is handled above)
-                const originalZ = interactiveElement.position.z;
-                const originalY = interactiveElement.position.y;
-                const originalScale = interactiveElement.scale.clone();
-                let momentaryMaterial = matGrayPress;
-
-                if (interactiveElement.name === 'VOLUME_DIAL_RIM') {
-                    interactiveElement.children.forEach(child => child.material = momentaryMaterial);
-                }
-                
-                // Apply momentary material to all functional buttons
-                if (['MUSIC_BUTTON', 'STORY_BUTTON', 'CITY_INFO_BUTTON', 'RECORD_BUTTON'].includes(interactiveElement.name)) {
-                    interactiveElement.material = momentaryMaterial;
-                }
-
-                if (interactiveElement.name === 'RESTART_BUTTON') interactiveElement.position.y += 0.01;
-                else interactiveElement.position.z -= 0.01;
-                interactiveElement.scale.set(0.98, 0.98, 0.98);
-
-                // 3. Release (Revert)
+                const oz = ie.position.z; const oy = ie.position.y; const os = ie.scale.clone();
+                let momMat = matGrayPress;
+                if (ie.name === 'VOLUME_DIAL_RIM') ie.children.forEach(c => c.material = momMat);
+                if (['MUSIC_BUTTON', 'STORY_BUTTON', 'CITY_INFO_BUTTON', 'RECORD_BUTTON', 'BOTTOM_AUX_BUTTON'].includes(ie.name)) ie.material = momMat;
+                if (ie.name === 'RESTART_BUTTON' || ie.name === 'BOTTOM_AUX_BUTTON') ie.position.y += 0.01; else ie.position.z -= 0.01; ie.scale.set(0.98, 0.98, 0.98);
                 setTimeout(() => {
-                    if (interactiveElement.name === 'RESTART_BUTTON') interactiveElement.position.y = originalY;
-                    else interactiveElement.position.z = originalZ;
-                    interactiveElement.scale.copy(originalScale);
-                    
-                    // Revert Materials
-                    if (interactiveElement.name === 'VOLUME_DIAL_RIM') {
-                        // Revert children materials back to black
-                        interactiveElement.children.forEach(child => child.material = matBlack);
-                    } else if (interactiveElement.name !== 'PLAY_PAUSE_BUTTON') {
-                        interactiveElement.material = interactiveElement.userData.originalMat || matBlack;
-                    }
+                    if (ie.name === 'RESTART_BUTTON' || ie.name === 'BOTTOM_AUX_BUTTON') ie.position.y = oy; else ie.position.z = oz; ie.scale.copy(os);
+                    if (ie.name === 'VOLUME_DIAL_RIM') ie.children.forEach(c => c.material = matBlack); else if (ie.name !== 'PLAY_PAUSE_BUTTON') ie.material = ie.userData.originalMat || matBlack;
                 }, 150);
             }
         }
-        container.addEventListener('pointerdown', onPointerDown, false);
+        function onPointerMove(event) {
+            if (isDragging && currentSection === 'view360') {
+                const deltaMove = { x: event.clientX - previousMousePosition.x, y: event.clientY - previousMousePosition.y };
+                manualRotation.y += deltaMove.x * 0.01; manualRotation.x += deltaMove.y * 0.01;
+                previousMousePosition = { x: event.clientX, y: event.clientY };
+            }
+        }
+        function onPointerUp() { 
+            if (isDragging) { 
+                isDragging = false; 
+                document.getElementById('view360').classList.remove('cursor-grabbing'); 
+                document.getElementById('view360').classList.add('cursor-grab'); 
+                // CHANGE: Show UI and reset model rotation on drag stop
+                document.body.classList.remove('hide-ui');
+                manualRotation = { x: 0, y: 0 };
+            } 
+        }
 
-        // --- SCROLL ANIMATION ---
+        container.addEventListener('pointerdown', onPointerDown, false);
+        container.addEventListener('pointermove', onPointerMove, false);
+        container.addEventListener('pointerup', onPointerUp, false);
+        container.addEventListener('pointerleave', onPointerUp, false);
+
         const targets = {
             'front': { cam: {x:0, y:-0.8, z:8.5}, rot: {x:0, y:0, z:0} },
             'functional': { cam: {x:0.5, y:0, z:5}, rot: {x:0, y:0.25, z:0} },
             'universal': { cam: {x:-0.5, y:0, z:5}, rot: {x:0, y:-0.25, z:0} },
-            // Camera position raised for last phase, and rotated to show bottom face
-            'specs': { cam: {x:0, y:0.8, z:7}, rot: {x:THREE.MathUtils.degToRad(-90), y:0, z:0} } 
+            'specs': { cam: {x:0, y:0.8, z:7}, rot: {x:THREE.MathUtils.degToRad(-90), y:0, z:0} },
+            'view360': { cam: {x:0, y:0, z:7}, rot: null }
         };
         let currentSection = 'front';
 
         function updateScroll() {
-            const sections = ['front', 'functional', 'universal', 'specs'];
-            let bestMatch = sections[0];
-            let maxVis = 0;
+            const sections = ['front', 'functional', 'universal', 'specs', 'view360'];
+            let bestMatch = sections[0]; let maxVis = 0;
             sections.forEach(id => {
                 const el = document.getElementById(id);
                 if (!el) return;
@@ -966,34 +656,23 @@
                 if (visibleHeight > maxVis) { maxVis = visibleHeight; bestMatch = id; }
             });
             currentSection = bestMatch;
-
-            // NEW: Overlay Control
-            const universalOverlay = document.getElementById('universal-overlay');
-            const maintenanceOverlay = document.getElementById('maintenance-overlay');
             
-            // Universal Overlay relies on parent element's fade-in/out via CSS classes
-            if (universalOverlay) {
-                 // Check if parent (fade-in-section) is visible. 
-                 const isUniversalSectionVisible = document.getElementById('universal').querySelector('.fade-in-section.is-visible');
-                 if (isUniversalSectionVisible) {
-                    universalOverlay.style.opacity = 1;
-                    universalOverlay.style.pointerEvents = 'auto';
-                 } else {
-                    universalOverlay.style.opacity = 0;
-                    universalOverlay.style.pointerEvents = 'none';
-                 }
+            const overlay = document.getElementById('universal-overlay');
+            if(overlay) {
+                const isVisible = document.getElementById('universal').querySelector('.content-section.is-visible'); // Use generic class
+                // Actually the fade logic uses 'is-visible' on the section itself now
+                const universalSection = document.getElementById('universal');
+                const isUniversalVisible = universalSection.classList.contains('is-visible');
+                overlay.style.opacity = isUniversalVisible ? 1 : 0; 
+                overlay.style.pointerEvents = isUniversalVisible ? 'auto' : 'none';
             }
 
-
-            // Maintenance Overlay is controlled by the currentSection match
-            if (maintenanceOverlay) {
-                if (currentSection === 'specs') {
-                    maintenanceOverlay.style.opacity = 1;
-                    maintenanceOverlay.style.pointerEvents = 'auto';
-                } else {
-                    maintenanceOverlay.style.opacity = 0;
-                    maintenanceOverlay.style.pointerEvents = 'none';
-                }
+            const maintenanceOverlay = document.getElementById('maintenance-overlay');
+            if(maintenanceOverlay) {
+                // CHANGE: Visibility logic: Show in 'specs' (Access), HIDE in 'view360'
+                const showMaint = (currentSection === 'specs'); 
+                maintenanceOverlay.style.opacity = showMaint ? 1 : 0; 
+                maintenanceOverlay.style.pointerEvents = showMaint ? 'auto' : 'none';
             }
         }
         window.addEventListener('scroll', updateScroll);
@@ -1005,72 +684,52 @@
                 camera.position.x += (tgt.cam.x - camera.position.x) * 0.05;
                 camera.position.y += (tgt.cam.y - camera.position.y) * 0.05;
                 camera.position.z += (tgt.cam.z - camera.position.z) * 0.05;
-                deviceGroup.rotation.x += (tgt.rot.x - deviceGroup.rotation.x) * 0.05;
-                deviceGroup.rotation.y += (tgt.rot.y - deviceGroup.rotation.y) * 0.05;
-                deviceGroup.rotation.z += (tgt.rot.z - deviceGroup.rotation.z) * 0.05;
+
+                if (currentSection === 'view360') {
+                    deviceGroup.rotation.x += (manualRotation.x - deviceGroup.rotation.x) * 0.1;
+                    deviceGroup.rotation.y += (manualRotation.y - deviceGroup.rotation.y) * 0.1;
+                    deviceGroup.rotation.z += (0 - deviceGroup.rotation.z) * 0.1;
+                } else {
+                    deviceGroup.rotation.x += (tgt.rot.x - deviceGroup.rotation.x) * 0.05;
+                    deviceGroup.rotation.y += (tgt.rot.y - deviceGroup.rotation.y) * 0.05;
+                    deviceGroup.rotation.z += (tgt.rot.z - deviceGroup.rotation.z) * 0.05;
+                    manualRotation.x = 0; manualRotation.y = 0;
+                }
             }
             deviceGroup.position.y = Math.sin(Date.now() * 0.001) * 0.05;
 
-            // Battery Pulse Effect
+            // CHANGE: Battery Cycle - Pulse in UNIVERSAL (Control), Steady in others
             if (currentSection === 'universal') {
-                // Cycle between 0 (black) and 3 (bright green)
                 const time = Date.now() * 0.003; 
-                // Smooth sine wave mapped to 0 -> 3 range
                 const intensity = ((Math.sin(time) + 1) / 2) * 3.0;
                 matCyan.emissiveIntensity = intensity;
             } else {
-                // Return to stable bright state
                 matCyan.emissiveIntensity += (3.0 - matCyan.emissiveIntensity) * 0.1;
             }
-
             if (composer) composer.render(); else renderer.render(scene, camera);
         }
 
         window.addEventListener('resize', () => {
-            camera.aspect = window.innerWidth / window.innerHeight;
-            camera.updateProjectionMatrix();
+            camera.aspect = window.innerWidth / window.innerHeight; camera.updateProjectionMatrix();
             renderer.setSize(window.innerWidth, window.innerHeight);
             if (composer) composer.setSize(window.innerWidth, window.innerHeight);
         });
 
-        // The initial overlay handles the start click now
         const initialOverlay = document.getElementById('audio-start-overlay');
-        if (initialOverlay) {
-            initialOverlay.addEventListener('click', () => {
-                AudioManager.startBackground();
-                // This listener should only trigger once to initiate audio
-            }, { once: true });
-        }
-
+        if (initialOverlay) initialOverlay.addEventListener('click', () => { AudioManager.startBackground(); }, { once: true });
 
         window.onload = () => {
             const loader = document.getElementById('loader');
-            if (loader) {
-                loader.style.opacity = 0;
-                setTimeout(() => {
-                    loader.style.display = 'none';
-                    // The overlay is handled by CSS initially, no need for fade-in logic here
-                }, 500);
-            }
-            // Capture the icon element after the DOM is fully loaded
+            if (loader) { loader.style.opacity = 0; setTimeout(() => { loader.style.display = 'none'; }, 500); }
             playPauseIcon = document.getElementById('play-pause-icon');
-            // Initial state: Music is playing after the first interaction
             updatePlayPauseIcon(true); 
             animate();
         };
 
-        // --- NEW: OVERLAY BUTTON LOGIC ---
-
         document.getElementById('btn-restart-overlay')?.addEventListener('click', () => {
-             showMessage("System Restarting...", 3000);
-             // Short delay for visual feedback before reloading
-             setTimeout(() => location.reload(), 1000); 
+             showMessage("System Restarting...", 3000); setTimeout(() => location.reload(), 1000); 
         });
-
-        // The new overlay play/pause button uses the same logic as the 3D dial
         document.getElementById('btn-play-pause-overlay')?.addEventListener('click', toggleAudioPlayback);
-
-        // Mock Volume/Track controls for overlay buttons
         document.getElementById('btn-prev')?.addEventListener('click', () => AudioManager.playPrevTrack());
         document.getElementById('btn-next')?.addEventListener('click', () => AudioManager.playNextTrack());
         document.getElementById('btn-vol-up')?.addEventListener('click', () => AudioManager.volumeUp());
