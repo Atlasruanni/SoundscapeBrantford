@@ -28,7 +28,7 @@
             overflow: hidden;
         }
 
-        /* CHANGE: Hide UI elements when dragging in 360 view */
+        /* Hide UI elements when dragging in 360 view */
         body.hide-ui > *:not(#canvas-container) {
             opacity: 0 !important;
             transition: opacity 0.3s ease;
@@ -520,9 +520,34 @@
 
         // Left Dial
         const dialGroup = new THREE.Group(); dialGroup.position.set(-1.75, 0, Z_SURFACE);
+        
+        // CHANGE: Split rim into 4 quadrants
+        const segs = 4;
+        // CHANGE: Reduced gap size from 0.15 to 0.01 for a much smaller gap
+        const gap = 0.007; // Radians
+        const arc = (Math.PI * 2) / segs - gap;
         const rimGroup = new THREE.Group(); rimGroup.name = 'VOLUME_DIAL_RIM'; rimGroup.userData.originalMat = matBlack; dialGroup.add(rimGroup); clickableObjects.push(rimGroup);
-        const dish = new THREE.Mesh(new THREE.CylinderGeometry(0.9, 1.0, 0.15, 64), matBlack); dish.rotation.x = Math.PI/2; dish.position.z = -0.05; rimGroup.add(dish);
-        const slope = new THREE.Mesh(new THREE.CylinderGeometry(0.56, 0.9, 0.2, 64, 1, true), matBlack); slope.rotation.x = Math.PI/2; slope.position.z = 0.0; rimGroup.add(slope);
+        
+        for(let i=0; i<segs; i++) {
+            // Centers: 0 (Right), 1 (Top), 2 (Left), 3 (Bottom) -- based on standard circle angle 0 at +X
+            const centerAngle = i * (Math.PI/2);
+            const startAngle = centerAngle - arc/2;
+            
+            const dish = new THREE.Mesh(new THREE.CylinderGeometry(0.9, 1.0, 0.15, 32, 1, false, startAngle, arc), matBlack);
+            dish.rotation.x = Math.PI/2; 
+            dish.position.z = -0.05; 
+            // CHANGE: Tag quadrant index
+            dish.userData.quadrant = i;
+            rimGroup.add(dish);
+
+            const slope = new THREE.Mesh(new THREE.CylinderGeometry(0.56, 0.9, 0.2, 32, 1, true, startAngle, arc), matBlack);
+            slope.rotation.x = Math.PI/2; 
+            slope.position.z = 0.0; 
+            // CHANGE: Tag quadrant index
+            slope.userData.quadrant = i;
+            rimGroup.add(slope);
+        }
+
         const btn = new THREE.Mesh(new THREE.CylinderGeometry(0.54, 0.54, 0.1, 64), matCyan); btn.rotation.x = Math.PI/2; btn.position.z = 0.02; btn.name = 'PLAY_PAUSE_BUTTON'; btn.userData.originalMat = matCyan;
         dialGroup.add(btn); clickableObjects.push(btn); deviceGroup.add(dialGroup);
 
@@ -590,12 +615,54 @@
             const intersects = raycaster.intersectObjects(clickableObjects, true);
             if (intersects.length > 0) {
                 let ie = intersects[0].object;
-                const intersection = intersects[0]; const localPoint = intersection.point.clone(); ie.worldToLocal(localPoint);
+                const intersection = intersects[0]; const localPoint = intersection.point.clone(); 
+                let activeMeshes = []; // Store which meshes to animate
+
+                // CHANGE: Use parent (Group) transformation for accurate quadrant check
                 if (ie.parent && ie.parent.name === 'VOLUME_DIAL_RIM') {
-                    ie = ie.parent; const relX = localPoint.x; const relY = localPoint.y;
-                    if (Math.abs(relX) > Math.abs(relY) * 0.7) { if (relX > 0) AudioManager.playNextTrack(); else AudioManager.playPrevTrack(); } else { if (relY > 0) AudioManager.volumeUp(); else AudioManager.volumeDown(); }
-                } 
-                else if (ie.name === 'PLAY_PAUSE_BUTTON') toggleAudioPlayback();
+                    const rimGroup = ie.parent;
+                    const groupLocalPoint = intersection.point.clone();
+                    rimGroup.worldToLocal(groupLocalPoint); // Convert to group space which is XY plane aligned
+                    
+                    const relX = groupLocalPoint.x; 
+                    const relY = groupLocalPoint.y;
+                    
+                    let targetQuad = -1;
+
+                    if (Math.abs(relX) > Math.abs(relY) * 0.7) { 
+                        // Horizontal dominant
+                        if (relX > 0) { 
+                            AudioManager.playNextTrack(); 
+                            // CHANGE: Remapped Right to Index 1 (Visual Right)
+                            targetQuad = 1; 
+                        } else { 
+                            AudioManager.playPrevTrack(); 
+                            // CHANGE: Remapped Left to Index 3 (Visual Left)
+                            targetQuad = 3; 
+                        }
+                    } else { 
+                        // Vertical dominant
+                        if (relY > 0) { 
+                            AudioManager.volumeUp(); 
+                            // CHANGE: Remapped Top to Index 2 (Visual Top)
+                            targetQuad = 2; 
+                        } else { 
+                            AudioManager.volumeDown(); 
+                            // CHANGE: Remapped Bottom to Index 0 (Visual Bottom)
+                            targetQuad = 0; 
+                        }
+                    }
+                    // Treat group as the interactive element for animation, but filter children
+                    ie = ie.parent; 
+                    activeMeshes = ie.children.filter(c => c.userData.quadrant === targetQuad);
+                } else {
+                    ie.worldToLocal(localPoint); // Normal logic for other buttons
+                    activeMeshes = [ie]; // For buttons, animate the button itself (except rimGroup children handled differently in loop?)
+                    // Actually for buttons 'ie' is the mesh. For rim, 'ie' becomes the Group.
+                    // The visual logic below uses ie.material or ie.children.
+                }
+
+                if (ie.name === 'PLAY_PAUSE_BUTTON') toggleAudioPlayback();
                 else if (ie.name === 'MUSIC_BUTTON') AudioManager.play('music');
                 else if (ie.name === 'STORY_BUTTON') AudioManager.play('story');
                 else if (ie.name === 'CITY_INFO_BUTTON') AudioManager.play('info');
@@ -609,12 +676,25 @@
 
                 const oz = ie.position.z; const oy = ie.position.y; const os = ie.scale.clone();
                 let momMat = matGrayPress;
-                if (ie.name === 'VOLUME_DIAL_RIM') ie.children.forEach(c => c.material = momMat);
+                
+                // VISUAL FEEDBACK LOGIC
+                if (ie.name === 'VOLUME_DIAL_RIM') {
+                    // CHANGE: Only light up active meshes for quadrant
+                    activeMeshes.forEach(c => c.material = momMat);
+                }
+                
                 if (['MUSIC_BUTTON', 'STORY_BUTTON', 'CITY_INFO_BUTTON', 'RECORD_BUTTON', 'BOTTOM_AUX_BUTTON'].includes(ie.name)) ie.material = momMat;
                 if (ie.name === 'RESTART_BUTTON' || ie.name === 'BOTTOM_AUX_BUTTON') ie.position.y += 0.01; else ie.position.z -= 0.01; ie.scale.set(0.98, 0.98, 0.98);
+                
                 setTimeout(() => {
                     if (ie.name === 'RESTART_BUTTON' || ie.name === 'BOTTOM_AUX_BUTTON') ie.position.y = oy; else ie.position.z = oz; ie.scale.copy(os);
-                    if (ie.name === 'VOLUME_DIAL_RIM') ie.children.forEach(c => c.material = matBlack); else if (ie.name !== 'PLAY_PAUSE_BUTTON') ie.material = ie.userData.originalMat || matBlack;
+                    
+                    if (ie.name === 'VOLUME_DIAL_RIM') {
+                        // CHANGE: Revert active meshes only
+                        activeMeshes.forEach(c => c.material = matBlack);
+                    } else if (ie.name !== 'PLAY_PAUSE_BUTTON') {
+                        ie.material = ie.userData.originalMat || matBlack;
+                    }
                 }, 150);
             }
         }
@@ -692,14 +772,14 @@
 
                 if (currentSection === 'view360') {
                     // Check if dragging or resetting
-                    // CHANGE: Set reset speed to 0.05 to match the rest of the page animations
+                    // CHANGE: Reverted reset speed to 0.05 to match standard page speed
                     const lerpFactor = isDragging ? 0.2 : 0.05; 
                     
                     deviceGroup.rotation.x += (manualRotation.x - deviceGroup.rotation.x) * lerpFactor;
                     deviceGroup.rotation.y += (manualRotation.y - deviceGroup.rotation.y) * lerpFactor;
                     deviceGroup.rotation.z += (0 - deviceGroup.rotation.z) * lerpFactor;
                 } else {
-                    // CHANGE: Restored reset speed to 0.05 to ensure consistent movement speed with the rest of the page
+                    // CHANGE: Reverted transition speed from 0.005 back to 0.05 for responsive navigation
                     deviceGroup.rotation.x += (tgt.rot.x - deviceGroup.rotation.x) * 0.05;
                     deviceGroup.rotation.y += (tgt.rot.y - deviceGroup.rotation.y) * 0.05;
                     deviceGroup.rotation.z += (tgt.rot.z - deviceGroup.rotation.z) * 0.05;
