@@ -21,12 +21,6 @@
             font-family: 'Arial', sans-serif; 
             overflow-x: hidden; 
             background-color: #000000; 
-            /* Added Background Image */
-            background-image: url('Background.png');
-            background-position: center center;
-            background-repeat: no-repeat;
-            background-attachment: fixed;
-            background-size: cover;
             color: #f5f5f7;
         }
         
@@ -252,9 +246,9 @@
                 </div>
                 <!-- Story -->
                 <div class="glass-card p-6 flex flex-col justify-between h-40">
-                      <div class="text-yellow-400 mb-2">
-                          <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" /></svg>
-                      </div>
+                     <div class="text-yellow-400 mb-2">
+                         <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" /></svg>
+                     </div>
                     <div>
                         <h3 class="text-white font-semibold text-sm mb-1">Story <span class="text-xs font-mono ml-2 text-yellow-300 opacity-70">⠎⠞⠕⠗⠽</span></h3>
                         <p class="text-zinc-400 text-xs leading-snug">Local history and culture fostering connection.</p>
@@ -262,9 +256,9 @@
                 </div>
                 <!-- City Info -->
                 <div class="glass-card p-6 flex flex-col justify-between h-40">
-                      <div class="text-yellow-400 mb-2">
-                          <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-                      </div>
+                     <div class="text-yellow-400 mb-2">
+                         <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                     </div>
                     <div>
                         <h3 class="text-white font-semibold text-sm mb-1">City Info <span class="text-xs font-mono ml-2 text-yellow-300 opacity-70">⠉⠊⠞⠽ ⠊⠝⠋⠕</span></h3>
                         <p class="text-zinc-400 text-xs leading-snug">AI-powered updates on weather & events.</p>
@@ -272,9 +266,9 @@
                 </div>
                 <!-- Record -->
                 <div class="glass-card p-6 flex flex-col justify-between h-40 bg-zinc-800/80 border-zinc-600/30">
-                      <div class="text-red-500 mb-2 animate-pulse">
-                          <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="currentColor" viewBox="0 0 24 24"><circle cx="12" cy="12" r="6" /></svg>
-                      </div>
+                     <div class="text-red-500 mb-2 animate-pulse">
+                         <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="currentColor" viewBox="0 0 24 24"><circle cx="12" cy="12" r="6" /></svg>
+                     </div>
                     <div>
                         <h3 class="text-white font-semibold text-sm mb-1">Record <span class="text-xs font-mono ml-2 text-yellow-300 opacity-70">⠗⠑⠉⠕⠗⠙</span></h3>
                         <p class="text-zinc-400 text-xs leading-snug">Leave feedback or messages for the community.</p>
@@ -538,10 +532,6 @@
         const container = document.getElementById('canvas-container');
         if(container.firstChild) container.removeChild(container.firstChild);
         const scene = new THREE.Scene(); scene.background = new THREE.Color(0x000000); 
-        // CHANGE: Use TextureLoader to load Background.png instead of simple black color
-        const textureLoader = new THREE.TextureLoader();
-        scene.background = textureLoader.load('Background.png');
-
         const camera = new THREE.PerspectiveCamera(35, window.innerWidth / window.innerHeight, 0.1, 100);
         camera.position.set(0, 0, 10); 
         const renderer = new THREE.WebGLRenderer({ alpha: false, antialias: true });
