@@ -367,6 +367,51 @@
         currentTrackIndex: 0, audioElement: null,
         sources: { recordBeep: new Audio('https://actions.google.com/sounds/v1/alarms/beep_short.ogg') },
         current: null, isRecording: false, recorder: null, stream: null, hasInteracted: false,
+        voices: [],
+
+        // Content Libraries - Extended Paragraphs
+        storyContent: [
+            "Brantford is proudly known worldwide as the Telephone City. It was here, at his family's homestead—Melville House—on a humid summer day in 1874, that Alexander Graham Bell first conceived the revolutionary idea of the telephone. Just two years later, he proved his invention worked by successfully receiving a clear long-distance transmission from Paris, Ontario, forever changing how humanity connects.",
+            "Art lovers know Brantford as the birthplace of Lawren Harris, a founder of the iconic Group of Seven. Born here in 1885, his childhood home still stands on West Colborne Street. The wealthy industrial atmosphere of turn-of-the-century Brantford provided the backdrop for his early life before he ventured north to paint the stark, spiritual landscapes that defined Canadian art.",
+            "Her Majesty's Royal Chapel of the Mohawks is a site of profound significance. Built in 1785, it is the oldest surviving church in Ontario and the first Protestant church in Upper Canada. It was given to the Mohawk people led by Joseph Brant as a reminder of the alliances formed during the American Revolution, and it remains a designated National Historic Site today.",
+            "For hockey fans, Brantford is hallowed ground. This is the hometown of Wayne Gretzky, the Great One. Visitors often flock to the Wayne Gretzky Sports Centre, not just to skate, but to see the inspiring 12-foot bronze statue of Wayne hoisting the Stanley Cup, with statues of his parents, Walter and Phyllis, standing proudly nearby.",
+            "In the late 19th century, Brantford was an industrial titan, ranking third in all of Canada for export value. Factories here produced everything from Massey-Harris farm equipment to biscuits and textiles, shipping goods across the British Empire. That blue-collar grit and innovation laid the foundation for the resilient community we see today.",
+            "The Grand River, a designated Canadian Heritage River, is the lifeblood of our landscape. It winds through the city offering some of the best fly-fishing for steelhead trout in the province. The extensive trail system along its banks allows residents to walk, cycle, and find a moment of peace right in the heart of the city."
+        ],
+        
+        // Dynamic City Info Generator - Broadcast Style
+        getCityInfo() {
+            const time = new Date();
+            const hour = time.getHours();
+            const minutes = time.getMinutes();
+            const timeString = `${hour % 12 || 12}:${minutes < 10 ? '0' + minutes : minutes} ${hour >= 12 ? 'PM' : 'AM'}`;
+            
+            // Greetings based on time
+            let greeting = "Good morning";
+            if(hour >= 12 && hour < 17) greeting = "Good afternoon";
+            else if(hour >= 17) greeting = "Good evening";
+
+            // Random Weather Snippets
+            const weather = [
+                "skies are currently clear with a pleasant temperature of 22 degrees",
+                "we are seeing some overcast clouds with a chance of light rain later this evening",
+                "it is a sunny and bright day, perfect for outdoor activities",
+                "winds are picking up slightly from the west, bringing cooler temperatures"
+            ];
+            const selectedWeather = weather[Math.floor(Math.random() * weather.length)];
+
+            // Random Local Updates
+            const news = [
+                "In traffic news, construction on King George Road is causing minor delays, so please plan your route accordingly.",
+                "Community reminder: The Brantford Public Library is hosting a local author reading series tonight at 7 PM.",
+                "If you are heading downtown, the Market Centre Parkade has ample parking available right now.",
+                "Don't forget, waste collection for Ward 3 is scheduled for tomorrow morning. Please have your bins out by 7 AM.",
+                "Transit update: Route 8 Holmedale is currently running five minutes behind schedule."
+            ];
+            const selectedNews = news[Math.floor(Math.random() * news.length)];
+
+            return `${greeting}, Brantford. It is currently ${timeString}. The ${selectedWeather}. ${selectedNews}. Stay safe and enjoy your day.`;
+        },
 
         init() {
             this.audioElement = new Audio();
@@ -375,6 +420,15 @@
             this.sources.recordBeep.volume = 0.7;
             this.loadTrack(this.currentTrackIndex);
             this.audioElement.addEventListener('ended', () => { if (this.current === 'music' && isPlaying) this.playNextTrack(); });
+            
+            // Init Voices - Attempt to load immediately and on change
+            const loadVoices = () => {
+                this.voices = window.speechSynthesis.getVoices();
+            };
+            loadVoices();
+            if (window.speechSynthesis.onvoiceschanged !== undefined) {
+                window.speechSynthesis.onvoiceschanged = loadVoices;
+            }
         },
         loadTrack(index) {
             this.currentTrackIndex = (index % this.trackList.length + this.trackList.length) % this.trackList.length;
@@ -400,8 +454,34 @@
             }
             this.stopAll();
             if (type === 'story' || type === 'info') {
-                const text = type === 'story' ? "Welcome to Brantford history..." : "Brantford City Update...";
+                let text = "";
+                if (type === 'story') {
+                    // Pick random story
+                    text = this.storyContent[Math.floor(Math.random() * this.storyContent.length)];
+                    showMessage("Playing Local History...", 3000);
+                } else {
+                    // Generate dynamic info
+                    text = this.getCityInfo();
+                    showMessage("Broadcasting City Info...", 3000);
+                }
+                
                 const u = new SpeechSynthesisUtterance(text);
+                
+                // Voice Selection Logic: Prioritize Google, then "Natural", then default
+                // This tries to find a higher quality voice than the robotic default
+                if (this.voices.length > 0) {
+                    const preferredVoice = this.voices.find(v => v.name.includes('Google US English')) || 
+                                           this.voices.find(v => v.name.includes('Google UK English Female')) ||
+                                           this.voices.find(v => v.name.includes('Natural')) ||
+                                           this.voices.find(v => v.lang === 'en-US');
+                    if (preferredVoice) {
+                        u.voice = preferredVoice;
+                    }
+                }
+
+                u.rate = 0.9; // Slightly slower is usually more intelligible and natural for TTS
+                u.pitch = 1.0;
+                
                 window.speechSynthesis.speak(u);
                 this.current = type;
                 u.onend = () => this.play('music'); 
