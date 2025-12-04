@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Brantford Soundscape Interface</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
@@ -24,6 +24,7 @@
             color: #f5f5f7;
             user-select: none; /* Prevent text selection during interaction */
             -webkit-user-select: none;
+            -webkit-tap-highlight-color: transparent;
         }
         
         body.noscroll {
@@ -94,6 +95,13 @@
             display: grid;
             grid-template-columns: repeat(2, 1fr);
             gap: 1rem;
+        }
+
+        /* Responsive grid adjustments */
+        @media (max-width: 640px) {
+            .bento-grid {
+                grid-template-columns: 1fr;
+            }
         }
 
         .scroll-indicator {
@@ -176,6 +184,9 @@
             pointer-events: none;
             box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
             font-size: 14px;
+            width: 90%;
+            max-width: 300px;
+            text-align: center;
         }
 
         .cursor-grab { cursor: grab; }
@@ -204,6 +215,13 @@
             box-shadow: 0 4px 10px rgba(0,0,0,0.5);
         }
 
+        /* Portrait orientation warning */
+        @media screen and (orientation: portrait) and (max-width: 768px) {
+            .landscape-hint {
+                display: flex !important;
+            }
+        }
+
     </style>
 </head>
 <body class="text-slate-200 antialiased noscroll">
@@ -216,17 +234,17 @@
         </div>
     </div>
     
-    <div id="audio-start-overlay" class="flex flex-col items-center">
+    <div id="audio-start-overlay" class="flex flex-col items-center p-4 text-center">
         <svg xmlns="http://www.w3.org/2000/svg" width="60" height="60" viewBox="0 0 24 24" fill="currentColor" class="text-yellow-500 mb-4 animate-pulse"><path d="M12 2C6.477 2 2 6.477 2 12s4.477 10 10 10 10-4.477 10-10S17.523 2 12 2zm0 18c-4.411 0-8-3.589-8-8s3.589-8 8-8 8 3.589 8 8-3.589 8-8 8z"/><path d="M10 8l6 4-6 4V8z"/></svg>
-        Tap Anywhere to Start Soundscape
+        <span class="text-sm uppercase tracking-widest">Tap Anywhere to Start</span>
     </div>
 
     <div id="message-box"></div>
     <div id="canvas-container"></div>
 
     <!-- Navigation -->
-    <nav class="fixed top-0 w-full z-50 px-6 md:px-12 py-4 flex justify-between items-center pointer-events-auto">
-        <div class="text-lg font-bold tracking-tighter text-white">
+    <nav class="fixed top-0 w-full z-50 px-4 md:px-12 py-4 flex justify-between items-center pointer-events-auto bg-black/50 backdrop-blur-md">
+        <div class="text-sm md:text-lg font-bold tracking-tighter text-white">
             BRANTFORD <span class="text-yellow-500">///</span> SOUNDSCAPE
         </div>
         <div class="hidden md:flex gap-8 font-medium">
@@ -237,23 +255,27 @@
             <a href="#view360" class="nav-link">360° View</a>
             <a href="#prototype" class="nav-link text-yellow-500">Interactive Demo</a>
         </div>
+        <!-- Mobile Menu Placeholder (simplified for prototype focus) -->
+        <div class="md:hidden text-xs text-zinc-500 uppercase tracking-widest">
+            Proto v1.0
+        </div>
     </nav>
     
     <!-- Restart Overlay -->
     <div id="maintenance-overlay" class="fixed bottom-40 left-1/2 transform -translate-x-1/2 p-3 rounded-xl bg-red-900/10 border-red-500/20 transition-opacity duration-500 z-40 opacity-0 pointer-events-none">
         <button id="btn-restart-overlay" class="p-3 rounded-full bg-red-600 hover:bg-red-500 transition duration-200 text-white font-bold text-sm pointer-events-auto flex items-center gap-2" title="System Restart">
             <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11.412 10.356A8.001 8.001 0 0120 11.5M4 15V9" /></svg>
-            SYSTEM RESTART
+            RESTART
         </button>
     </div>
 
     <!-- 1. Main -->
     <section id="front" class="content-section justify-center text-center px-6">
-        <div class="max-w-4xl mx-auto mt-[40vh] md:mt-[35vh]">
-            <h1 class="section-title text-5xl md:text-8xl font-bold mb-6 text-white">
+        <div class="max-w-4xl mx-auto mt-[30vh]">
+            <h1 class="section-title text-4xl md:text-8xl font-bold mb-6 text-white leading-tight">
                 Public Atmosphere.<br>Reimagined.
             </h1>
-            <p class="text-zinc-400 text-lg md:text-xl max-w-2xl mx-auto leading-relaxed font-light dark-text-shadow">
+            <p class="text-zinc-400 text-base md:text-xl max-w-2xl mx-auto leading-relaxed font-light dark-text-shadow">
                 An interactive audio experience designed to enhance community connection and deliver real-time information to Brantford.
             </p>
         </div>
@@ -263,46 +285,46 @@
     <!-- 2. Function -->
     <section id="functional" class="content-section justify-start px-6 md:px-24">
         <div class="w-full max-w-md">
-            <h2 class="section-title text-4xl font-bold mb-8 text-white">Core Functions.</h2>
+            <h2 class="section-title text-3xl md:text-4xl font-bold mb-8 text-white">Core Functions.</h2>
             <div class="bento-grid">
                 <!-- Music -->
-                <div class="glass-card p-6 flex flex-col justify-between h-40">
+                <div class="glass-card p-4 md:p-6 flex flex-col justify-between h-32 md:h-40">
                     <div class="text-yellow-400 mb-2">
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3" /></svg>
                     </div>
                     <div>
-                        <h3 class="text-white font-semibold text-sm mb-1">Music <span class="text-xs font-mono ml-2 text-yellow-300 opacity-70">⠍⠥⠎⠊⠉</span></h3>
-                        <p class="text-zinc-400 text-xs leading-snug">Curated, calming soundscapes for safer streets.</p>
+                        <h3 class="text-white font-semibold text-sm mb-1">Music</h3>
+                        <p class="text-zinc-400 text-[10px] md:text-xs leading-snug">Curated, calming soundscapes.</p>
                     </div>
                 </div>
                 <!-- Story -->
-                <div class="glass-card p-6 flex flex-col justify-between h-40">
+                <div class="glass-card p-4 md:p-6 flex flex-col justify-between h-32 md:h-40">
                       <div class="text-yellow-400 mb-2">
                           <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" /></svg>
                       </div>
                     <div>
-                        <h3 class="text-white font-semibold text-sm mb-1">Story <span class="text-xs font-mono ml-2 text-yellow-300 opacity-70">⠎⠞⠕⠗⠽</span></h3>
-                        <p class="text-zinc-400 text-xs leading-snug">Local history and culture fostering connection.</p>
+                        <h3 class="text-white font-semibold text-sm mb-1">Story</h3>
+                        <p class="text-zinc-400 text-[10px] md:text-xs leading-snug">Local history and culture.</p>
                     </div>
                 </div>
                 <!-- City Info -->
-                <div class="glass-card p-6 flex flex-col justify-between h-40">
+                <div class="glass-card p-4 md:p-6 flex flex-col justify-between h-32 md:h-40">
                       <div class="text-yellow-400 mb-2">
                           <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
                       </div>
                     <div>
-                        <h3 class="text-white font-semibold text-sm mb-1">City Info <span class="text-xs font-mono ml-2 text-yellow-300 opacity-70">⠉⠊⠞⠽ ⠊⠝⠋⠕</span></h3>
-                        <p class="text-zinc-400 text-xs leading-snug">AI-powered updates on weather & events.</p>
+                        <h3 class="text-white font-semibold text-sm mb-1">City Info</h3>
+                        <p class="text-zinc-400 text-[10px] md:text-xs leading-snug">Real-time updates.</p>
                     </div>
                 </div>
                 <!-- Record -->
-                <div class="glass-card p-6 flex flex-col justify-between h-40 bg-zinc-800/80 border-zinc-600/30">
+                <div class="glass-card p-4 md:p-6 flex flex-col justify-between h-32 md:h-40 bg-zinc-800/80 border-zinc-600/30">
                       <div class="text-red-500 mb-2 animate-pulse">
                           <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="currentColor" viewBox="0 0 24 24"><circle cx="12" cy="12" r="6" /></svg>
                       </div>
                     <div>
-                        <h3 class="text-white font-semibold text-sm mb-1">Record <span class="text-xs font-mono ml-2 text-yellow-300 opacity-70">⠗⠑⠉⠕⠗⠙</span></h3>
-                        <p class="text-zinc-400 text-xs leading-snug">Leave feedback or messages for the community.</p>
+                        <h3 class="text-white font-semibold text-sm mb-1">Record</h3>
+                        <p class="text-zinc-400 text-[10px] md:text-xs leading-snug">Leave community feedback.</p>
                     </div>
                 </div>
             </div>
@@ -312,8 +334,8 @@
     <!-- 3. Control -->
     <section id="universal" class="content-section justify-end px-6 md:px-24">
         <div class="w-full max-w-sm text-right">
-            <h2 class="section-title text-4xl font-bold mb-6 text-white">Universal Control.</h2>
-            <div id="tactile-card" class="glass-card p-8 inline-block text-left w-full">
+            <h2 class="section-title text-3xl md:text-4xl font-bold mb-6 text-white">Universal Control.</h2>
+            <div id="tactile-card" class="glass-card p-6 md:p-8 inline-block text-left w-full">
                 <div class="flex items-center gap-4 mb-4">
                     <div class="w-12 h-12 rounded-full bg-yellow-500/20 flex items-center justify-center text-yellow-400">
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z" /></svg>
@@ -325,16 +347,15 @@
                 </div>
                 <p class="text-zinc-300 text-sm leading-relaxed">
                     A single, intuitive dial controls volume and playback using globally recognized symbols.
-                    <span class="text-white block mt-2 font-medium">The large green button serves as a dynamic battery indicator, the brightness level shows charge status and device health.</span>
                 </p>
                 <div id="universal-overlay" class="mt-8 transition-opacity duration-500">
                     <div id="overlay-controls-container" class="glass-card p-4 pointer-events-auto w-full mx-auto" style="border-radius: 30px; border: none; background: rgba(0,0,0,0.3); backdrop-filter: blur(15px);">
                         <div id="overlay-controls" class="flex justify-around items-center space-x-2 text-white">
-                            <button id="btn-vol-up" class="w-12 h-12 p-2 rounded-full hover:bg-white/20 transition duration-200" title="Volume Up"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14"/><path d="M5 12h14"/></svg></button>
-                            <button id="btn-prev" class="w-12 h-12 p-2 rounded-full hover:bg-white/20 transition duration-200" title="Previous Track"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="19 20 9 12 19 4 19 20"/><line x1="5" x2="5" y1="19" y2="5"/></svg></button>
-                            <button id="btn-play-pause-overlay" class="w-12 h-12 p-2 rounded-full hover:bg-white/20 transition duration-200" title="Play/Pause"><svg id="play-pause-icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="currentColor" class="text-yellow-500"><path d="M3 22v-20l18 10-18 10z"/></svg></button>
-                            <button id="btn-next" class="w-12 h-12 p-2 rounded-full hover:bg-white/20 transition duration-200" title="Next Track"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 4 15 12 5 20 5 4"/><line x1="19" x2="19" y1="5" y2="19"/></svg></button>
-                            <button id="btn-vol-down" class="w-12 h-12 p-2 rounded-full hover:bg-white/20 transition duration-200" title="Volume Down"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" x2="19" y1="12" y2="12"/></svg></button>
+                            <button id="btn-vol-up" class="w-10 h-10 md:w-12 md:h-12 p-2 rounded-full hover:bg-white/20 transition duration-200"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14"/><path d="M5 12h14"/></svg></button>
+                            <button id="btn-prev" class="w-10 h-10 md:w-12 md:h-12 p-2 rounded-full hover:bg-white/20 transition duration-200"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="19 20 9 12 19 4 19 20"/><line x1="5" x2="5" y1="19" y2="5"/></svg></button>
+                            <button id="btn-play-pause-overlay" class="w-10 h-10 md:w-12 md:h-12 p-2 rounded-full hover:bg-white/20 transition duration-200"><svg id="play-pause-icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="currentColor" class="text-yellow-500"><path d="M3 22v-20l18 10-18 10z"/></svg></button>
+                            <button id="btn-next" class="w-10 h-10 md:w-12 md:h-12 p-2 rounded-full hover:bg-white/20 transition duration-200"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 4 15 12 5 20 5 4"/><line x1="19" x2="19" y1="5" y2="19"/></svg></button>
+                            <button id="btn-vol-down" class="w-10 h-10 md:w-12 md:h-12 p-2 rounded-full hover:bg-white/20 transition duration-200"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" x2="19" y1="12" y2="12"/></svg></button>
                         </div>
                     </div>
                 </div>
@@ -349,11 +370,16 @@
                 <div class="bg-red-500/10 p-4 h-full flex items-center rounded-xl">
                     <span class="text-red-500 font-bold text-xs uppercase tracking-wider rotate-180" style="writing-mode: vertical-rl;">Admin</span>
                 </div>
-                <div class="py-4 pr-6">
+                <div class="py-4 pr-6 flex-grow">
                     <h3 class="text-white font-bold text-lg">Maintenance Access</h3>
-                    <p class="text-zinc-400 text-sm mt-1">
-                        The <span class="text-red-400">Restart Button</span> is concealed on the bottom face, accessible only to City staff for secure resetting and diagnostics.
+                    <p class="text-zinc-400 text-sm mt-1 mb-3">
+                        The <span class="text-red-400">Restart Button</span> is concealed on the bottom face.
                     </p>
+                    <!-- Integrated GitHub Project Link -->
+                    <a href="https://github.com/elias-dzobo/soundscape" target="_blank" class="inline-flex items-center gap-2 text-[10px] uppercase tracking-widest text-zinc-500 hover:text-white transition-colors border border-zinc-700/50 rounded-full px-3 py-1 bg-black/20">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/></svg>
+                        System Source
+                    </a>
                 </div>
             </div>
         </div>
@@ -368,20 +394,29 @@
                 <span class="text-sm font-bold text-white uppercase tracking-wider">Drag to Rotate 360°</span>
             </div>
         </div>
-        <footer class="absolute bottom-6 w-full text-center text-white/50 text-xs tracking-wider uppercase">
-            Designed for Brantford &copy; 2025
+        <footer class="absolute bottom-6 w-full text-center text-white/50 text-xs tracking-wider uppercase flex flex-col items-center gap-2">
+            <span>Designed for Brantford &copy; 2025</span>
+            <a href="https://github.com/elias-dzobo/soundscape" target="_blank" class="opacity-50 hover:opacity-100 transition-opacity">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/></svg>
+            </a>
         </footer>
     </section>
 
     <!-- 6. Prototype Interaction Layer (Updated to match 3D Model Geometry) -->
     <section id="prototype" class="content-section flex justify-center items-center overflow-hidden relative w-full h-screen bg-black/80 backdrop-blur-xl z-50">
+        <div class="landscape-hint hidden absolute top-0 left-0 w-full h-full bg-black/90 z-[60] flex-col items-center justify-center text-center p-8 pointer-events-none">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12 text-yellow-500 mb-4 animate-bounce" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>
+            <p class="text-white text-sm uppercase tracking-widest">Rotate for Better View</p>
+        </div>
+
         <div class="absolute top-4 w-full text-center pointer-events-none">
-             <p class="text-white/30 text-xs uppercase tracking-[0.3em]">Interactive Mobile Prototype</p>
+             <p class="text-white/30 text-[10px] md:text-xs uppercase tracking-[0.3em]">Interactive Mobile Prototype</p>
         </div>
         
         <!-- Physical Device Container (Aspect 5.75 / 2.2) -->
         <!-- Matches #FFD500 (More Yellow) with subtle inset shadow to mimic 3D lighting -->
-        <div id="interface-shell" class="relative bg-[#FFD500] rounded-[30px] shadow-2xl pointer-events-auto" style="aspect-ratio: 5.75/2.2; width: 95vw; max-width: 1000px; box-shadow: inset 0 0 60px rgba(255,255,255,0.15), 0 20px 50px rgba(0,0,0,0.5);">
+        <!-- Adjusted width to 98vw for better mobile fit -->
+        <div id="interface-shell" class="relative bg-[#FFD500] rounded-[20px] md:rounded-[30px] shadow-2xl pointer-events-auto" style="aspect-ratio: 5.75/2.2; width: 98vw; max-width: 1000px; box-shadow: inset 0 0 60px rgba(255,255,255,0.15), 0 20px 50px rgba(0,0,0,0.5);">
             
             <!-- Left: Tactile Dial (Centered at x=-1.75 -> 19.5% from left) -->
             <!-- Diameter 2.0 / 5.75 ~= 34.78% width. Height matches aspect. -->
@@ -402,19 +437,12 @@
                     </defs>
 
                     <!-- Top (Vol Up) - 12 o'clock -->
-                    <!-- Path spans 0 to 90 deg (Top to Right). Rotate -45 to center on Top. -->
                     <path d="M 50 5 A 45 45 0 0 1 95 50 L 78 50 A 28 28 0 0 0 50 22 Z" transform="rotate(-45 50 50)" class="dial-segment" data-action="vol-up"></path>
-                    
                     <!-- Right (Next) - 3 o'clock -->
-                    <!-- Rotate 45 to center on Right. -->
                     <path d="M 50 5 A 45 45 0 0 1 95 50 L 78 50 A 28 28 0 0 0 50 22 Z" transform="rotate(45 50 50)" class="dial-segment" data-action="next"></path>
-                    
                     <!-- Bottom (Vol Down) - 6 o'clock -->
-                    <!-- Rotate 135 to center on Bottom. -->
                     <path d="M 50 5 A 45 45 0 0 1 95 50 L 78 50 A 28 28 0 0 0 50 22 Z" transform="rotate(135 50 50)" class="dial-segment" data-action="vol-down"></path>
-                    
                     <!-- Left (Prev) - 9 o'clock -->
-                    <!-- Rotate 225 to center on Left. -->
                     <path d="M 50 5 A 45 45 0 0 1 95 50 L 78 50 A 28 28 0 0 0 50 22 Z" transform="rotate(225 50 50)" class="dial-segment" data-action="prev"></path>
                     
                     <!-- Icons on Dial -->
@@ -424,8 +452,7 @@
                     <text x="12" y="53" fill="#666" font-size="6" text-anchor="middle" pointer-events="none" style="filter: drop-shadow(0px 1px 0px rgba(0,0,0,0.5));">◄◄</text>
                 </svg>
 
-                <!-- Center Button (Play/Pause) - Radius 0.54 (54% diameter of 100) -->
-                <!-- Green Background as requested -->
+                <!-- Center Button (Play/Pause) -->
                 <button id="demo-play-btn" class="relative w-[54%] h-[54%] rounded-full bg-[#00A060] flex items-center justify-center shadow-[inset_0_2px_5px_rgba(255,255,255,0.2),0_5px_10px_rgba(0,0,0,0.3)] active:scale-95 transition-transform z-10" data-action="play">
                      <svg id="demo-play-icon" xmlns="http://www.w3.org/2000/svg" class="h-10 w-10 text-black drop-shadow-sm" viewBox="0 0 24 24" fill="currentColor"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>
                 </button>
@@ -481,11 +508,9 @@
                     
                     <!-- Bottom Right: Record (Matte Steel / Silver) -->
                     <button class="bg-gradient-to-br from-[#d4d4d4] via-[#999] to-[#666] rounded-xl shadow-[0_2px_4px_rgba(0,0,0,0.8),_inset_0_1px_1px_rgba(255,255,255,0.6)] flex flex-col items-center justify-center text-zinc-800 active:scale-95 transition-all relative border border-white/20" data-action="record">
-                        <!-- LED Indicator -->
-                        <div id="demo-rec-led" class="w-1.5 h-1.5 rounded-full bg-[#111] mb-1 shadow-[inset_0_1px_2px_rgba(0,0,0,0.8),0_1px_0_rgba(255,255,255,0.5)] border border-black/20 transition-colors duration-200"></div>
+                        <!-- LED Indicator - Positioned relative to center (0.3, -0.2) -->
+                        <div id="demo-rec-led" class="absolute w-1.5 h-1.5 rounded-full bg-[#111] shadow-[inset_0_1px_2px_rgba(0,0,0,0.8),0_1px_0_rgba(255,255,255,0.5)] border border-black/20 transition-colors duration-200" style="right: 16%; bottom: 18%;"></div>
                         <span class="text-[9px] uppercase font-bold tracking-widest text-zinc-900 drop-shadow-sm">Record</span>
-                        <!-- Mic Hole -->
-                        <div class="absolute bottom-2 right-2 w-1 h-1 bg-black/60 rounded-full shadow-[inset_0_1px_1px_rgba(0,0,0,1)]" title="Mic"></div>
                     </button>
                 </div>
             </div>
