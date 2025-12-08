@@ -17,18 +17,51 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/examples/js/postprocessing/UnrealBloomPass.js"></script>
     
     <style>
+        /* Tech-Noir / Dark Liquid Glass Theme Configuration */
+        :root {
+            --color-surface: #000000;
+            --color-accent: #FFD500; /* Safety Yellow */
+            --color-text-primary: #ffffff;
+            --color-text-secondary: #a1a1aa;
+            
+            /* Liquid Glass Variables - Semi-Transparent (approx 50% opacity for balance) */
+            --glass-bg: rgba(0, 0, 0, 0.5); 
+            --glass-border: rgba(255, 255, 255, 0.15);
+            --glass-highlight: rgba(255, 255, 255, 0.1);
+            --glass-blur: 20px;
+            --glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+        }
+
         body { 
             font-family: 'Arial', sans-serif; 
             overflow-x: hidden; 
-            background-color: #000000; 
-            color: #f5f5f7;
-            user-select: none; /* Prevent text selection during interaction */
+            background-color: var(--color-surface); 
+            color: var(--color-text-primary);
+            user-select: none;
             -webkit-user-select: none;
             -webkit-tap-highlight-color: transparent;
         }
         
         body.noscroll {
             overflow: hidden;
+        }
+
+        /* Tech-Noir Atmosphere Overlays */
+        .atmosphere-vignette {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            pointer-events: none;
+            z-index: 5;
+            background: radial-gradient(circle at center, transparent 40%, #000000 120%);
+        }
+
+        .atmosphere-noise {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            pointer-events: none;
+            z-index: 4;
+            opacity: 0.04;
+            filter: url(#noiseFilter);
         }
 
         /* Hide UI elements when dragging in 360 view */
@@ -66,29 +99,36 @@
             opacity: 1;
         }
 
-        /* Special visibility for prototype section to ensure it captures events */
         #prototype.is-visible {
             pointer-events: auto;
         }
         
+        /* Glassmorphism 2.0 - Round Edge Dark Liquid Glass */
         .glass-card {
             pointer-events: auto;
-            background: rgba(28, 28, 30, 0.6);
-            backdrop-filter: blur(30px);
-            -webkit-backdrop-filter: blur(30px);
-            border-radius: 30px;
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            transition: transform 0.3s ease, background 0.3s ease;
+            background: var(--glass-bg);
+            backdrop-filter: blur(var(--glass-blur));
+            -webkit-backdrop-filter: blur(var(--glass-blur));
+            border-radius: 40px; /* Enhanced Roundness */
+            border: 1px solid var(--glass-border);
+            border-top: 1px solid var(--glass-highlight);
+            transition: transform 0.3s ease, border-color 0.3s ease;
+            box-shadow: var(--glass-shadow);
         }
         
         .glass-card:hover {
-            background: rgba(44, 44, 46, 0.7);
-            border-color: rgba(255, 255, 255, 0.2);
+            border-color: var(--color-accent);
+            transform: translateY(-2px);
         }
 
         .section-title {
             letter-spacing: -0.03em;
-            text-shadow: 0 4px 10px rgba(0, 0, 0, 0.5); 
+            text-shadow: 0 4px 10px rgba(0, 0, 0, 0.8); 
+            color: var(--color-text-primary);
+        }
+
+        .text-secondary {
+            color: var(--color-text-secondary);
         }
 
         .bento-grid {
@@ -97,7 +137,6 @@
             gap: 1rem;
         }
 
-        /* Responsive grid adjustments */
         @media (max-width: 640px) {
             .bento-grid {
                 grid-template-columns: 1fr;
@@ -111,6 +150,7 @@
             transform: translateX(-50%);
             animation: pulse 2s infinite;
             opacity: 0.5;
+            color: var(--color-text-secondary);
         }
 
         @keyframes pulse {
@@ -129,21 +169,44 @@
             align-items: center;
             transition: opacity 0.5s;
         }
+
+        /* Nav Island Styles - Liquid */
+        .nav-island {
+            background: var(--glass-bg);
+            backdrop-filter: blur(var(--glass-blur));
+            -webkit-backdrop-filter: blur(var(--glass-blur));
+            border: 1px solid var(--glass-border);
+            border-top: 1px solid var(--glass-highlight);
+            box-shadow: var(--glass-shadow);
+            transition: all 0.3s ease;
+        }
         
-        nav {
-            background: rgba(0, 0, 0, 0.5);
-            backdrop-filter: blur(20px);
-            -webkit-backdrop-filter: blur(20px);
-            border-bottom: 1px solid rgba(255,255,255,0.05);
+        .nav-item {
+            transition: all 0.3s ease;
+            position: relative;
+            white-space: nowrap;
+            color: var(--color-text-secondary);
+        }
+        
+        .nav-item:hover {
+            color: #fff;
+        }
+        
+        .nav-item.active {
+            background-color: var(--color-accent);
+            color: #000000; /* Black text on yellow bg for readability */
+            box-shadow: 0 0 20px rgba(255, 213, 0, 0.2);
+            /* Removed font-weight change per request */
         }
 
-        .nav-link {
-            position: relative;
-            color: #86868b;
-            transition: color 0.3s;
-            font-size: 12px;
+        @media (max-width: 768px) {
+            .nav-brand-text {
+                display: none;
+            }
+            .nav-divider {
+                display: none;
+            }
         }
-        .nav-link:hover { color: #fff; }
 
         #audio-start-overlay {
             position: fixed;
@@ -169,23 +232,36 @@
              pointer-events: none;
         }
 
+        /* Message Box - Matching Dark Liquid Theme */
         #message-box {
             position: fixed;
             top: 20%;
             left: 50%;
             transform: translate(-50%, -50%);
-            padding: 1rem;
-            background: rgba(255, 0, 0, 0.8);
-            color: white;
-            border-radius: 10px;
+            padding: 1rem 2rem;
+            
+            /* Liquid Glass Effect matching .glass-card */
+            background: var(--glass-bg);
+            backdrop-filter: blur(var(--glass-blur));
+            -webkit-backdrop-filter: blur(var(--glass-blur));
+            
+            border-radius: 50px; /* Full Pill Shape */
+            border: 1px solid var(--glass-border);
+            border-top: 1px solid var(--glass-highlight);
+            
+            color: var(--color-text-primary);
             z-index: 1000;
             opacity: 0;
             transition: opacity 0.5s, transform 0.5s;
             pointer-events: none;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+            
+            box-shadow: var(--glass-shadow);
+            
             font-size: 14px;
-            width: 90%;
-            max-width: 300px;
+            letter-spacing: 0.05em;
+            width: auto;
+            min-width: 200px;
+            max-width: 80%;
             text-align: center;
         }
 
@@ -200,7 +276,7 @@
         }
         .dial-segment {
             fill: #050505;
-            stroke: #151515; /* Minimal gap line */
+            stroke: #151515; 
             stroke-width: 1px;
             transition: fill 0.1s;
             cursor: pointer;
@@ -208,23 +284,43 @@
         .dial-segment:active {
             fill: #222;
         }
-        /* Accurate Button Housing Container */
         .btn-housing {
             background-color: #050505;
-            border-radius: 20px; /* Matches rounded rect approx */
-            box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+            border-radius: 20px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.8);
         }
 
-        /* Portrait orientation warning */
         @media screen and (orientation: portrait) and (max-width: 768px) {
             .landscape-hint {
                 display: flex !important;
             }
         }
+        
+        #progress-bar {
+            width: 0%;
+            height: 4px;
+            background-color: var(--color-accent);
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            z-index: 100;
+            transition: width 0.1s linear;
+            box-shadow: 0 0 10px rgba(255, 213, 0, 0.5);
+        }
 
     </style>
 </head>
-<body class="text-slate-200 antialiased noscroll">
+<body class="antialiased noscroll">
+
+    <!-- Cinematic Noise SVG Filter -->
+    <svg style="display: none;">
+        <filter id="noiseFilter">
+            <feTurbulence type="fractalNoise" baseFrequency="0.8" numOctaves="3" stitchTiles="stitch"/>
+            <feColorMatrix type="saturate" values="0"/>
+        </filter>
+    </svg>
+    <div class="atmosphere-noise"></div>
+    <div class="atmosphere-vignette"></div>
 
     <!-- Loader -->
     <div id="loader" class="loader">
@@ -234,6 +330,9 @@
         </div>
     </div>
     
+    <!-- Progress Bar -->
+    <div id="progress-bar"></div>
+
     <div id="audio-start-overlay" class="flex flex-col items-center p-4 text-center">
         <svg xmlns="http://www.w3.org/2000/svg" width="60" height="60" viewBox="0 0 24 24" fill="currentColor" class="text-yellow-500 mb-4 animate-pulse"><path d="M12 2C6.477 2 2 6.477 2 12s4.477 10 10 10 10-4.477 10-10S17.523 2 12 2zm0 18c-4.411 0-8-3.589-8-8s3.589-8 8-8 8 3.589 8 8-3.589 8-8 8z"/><path d="M10 8l6 4-6 4V8z"/></svg>
         <span class="text-sm uppercase tracking-widest">Tap Anywhere to Start</span>
@@ -242,28 +341,31 @@
     <div id="message-box"></div>
     <div id="canvas-container"></div>
 
-    <!-- Navigation -->
-    <nav class="fixed top-0 w-full z-50 px-4 md:px-12 py-4 flex justify-between items-center pointer-events-auto bg-black/50 backdrop-blur-md">
-        <div class="text-sm md:text-lg font-bold tracking-tighter text-white">
-            BRANTFORD <span class="text-yellow-500">///</span> SOUNDSCAPE
+    <!-- Combined Nav Island (Floating Centered) -->
+    <nav class="fixed top-6 left-1/2 transform -translate-x-1/2 z-50 nav-island rounded-full p-2 pl-6 flex items-center gap-4 max-w-[95vw] overflow-hidden">
+        <!-- Integrated Branding -->
+        <div class="nav-brand-text flex items-center gap-1 shrink-0">
+            <span class="text-sm font-bold tracking-tighter text-white">BRANTFORD</span>
+            <span class="text-yellow-500 font-bold">///</span>
+            <span class="text-sm font-bold tracking-tighter text-white">SOUNDSCAPE</span>
         </div>
-        <div class="hidden md:flex gap-8 font-medium">
-            <a href="#front" class="nav-link">Main</a>
-            <a href="#functional" class="nav-link">Function</a>
-            <a href="#universal" class="nav-link">Control</a>
-            <a href="#specs" class="nav-link">Access</a>
-            <a href="#view360" class="nav-link">360° View</a>
-            <a href="#prototype" class="nav-link text-yellow-500">Interactive Demo</a>
-        </div>
-        <!-- Mobile Menu Placeholder (simplified for prototype focus) -->
-        <div class="md:hidden text-xs text-zinc-500 uppercase tracking-widest">
-            Proto v1.0
+        
+        <div class="nav-divider h-4 w-px bg-white/20 shrink-0"></div>
+
+        <!-- Navigation Links -->
+        <div class="flex items-center gap-1 overflow-x-auto no-scrollbar">
+            <a href="#front" class="nav-item px-4 py-2 rounded-full text-xs font-bold hover:text-white" data-target="front">MAIN</a>
+            <a href="#functional" class="nav-item px-4 py-2 rounded-full text-xs font-bold hover:text-white" data-target="functional">FUNC</a>
+            <a href="#universal" class="nav-item px-4 py-2 rounded-full text-xs font-bold hover:text-white" data-target="universal">CTRL</a>
+            <a href="#specs" class="nav-item px-4 py-2 rounded-full text-xs font-bold hover:text-white" data-target="specs">INFO</a>
+            <a href="#view360" class="nav-item px-4 py-2 rounded-full text-xs font-bold hover:text-white" data-target="view360">360°</a>
+            <a href="#prototype" class="nav-item px-4 py-2 rounded-full text-xs font-bold hover:text-white" data-target="prototype">DEMO</a>
         </div>
     </nav>
     
-    <!-- Restart Overlay -->
+    <!-- Maintenance Overlay (Visuals reverted to Restart, Function is Standby) -->
     <div id="maintenance-overlay" class="fixed bottom-40 left-1/2 transform -translate-x-1/2 p-3 rounded-xl bg-red-900/10 border-red-500/20 transition-opacity duration-500 z-40 opacity-0 pointer-events-none">
-        <button id="btn-restart-overlay" class="p-3 rounded-full bg-red-600 hover:bg-red-500 transition duration-200 text-white font-bold text-sm pointer-events-auto flex items-center gap-2" title="System Restart">
+        <button id="btn-restart-overlay" class="p-3 rounded-full bg-red-600 hover:bg-red-500 transition duration-200 text-white font-bold text-sm pointer-events-auto flex items-center gap-2" title="System Standby">
             <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11.412 10.356A8.001 8.001 0 0120 11.5M4 15V9" /></svg>
             RESTART
         </button>
@@ -272,59 +374,59 @@
     <!-- 1. Main -->
     <section id="front" class="content-section justify-center text-center px-6">
         <div class="max-w-4xl mx-auto mt-[30vh]">
-            <h1 class="section-title text-4xl md:text-8xl font-bold mb-6 text-white leading-tight">
+            <h1 class="section-title text-4xl md:text-8xl font-bold mb-6 leading-tight">
                 Public Atmosphere.<br>Reimagined.
             </h1>
-            <p class="text-zinc-400 text-base md:text-xl max-w-2xl mx-auto leading-relaxed font-light dark-text-shadow">
+            <p class="text-secondary text-base md:text-xl max-w-2xl mx-auto leading-relaxed font-light">
                 An interactive audio experience designed to enhance community connection and deliver real-time information to Brantford.
             </p>
         </div>
-        <div class="scroll-indicator text-zinc-500 text-xs font-medium tracking-widest uppercase">Scroll</div>
+        <div class="scroll-indicator text-xs font-medium tracking-widest uppercase">Scroll</div>
     </section>
 
     <!-- 2. Function -->
     <section id="functional" class="content-section justify-start px-6 md:px-24">
         <div class="w-full max-w-md">
-            <h2 class="section-title text-3xl md:text-4xl font-bold mb-8 text-white">Core Functions.</h2>
+            <h2 class="section-title text-3xl md:text-4xl font-bold mb-8">Core Functions.</h2>
             <div class="bento-grid">
                 <!-- Music -->
                 <div class="glass-card p-4 md:p-6 flex flex-col justify-between h-32 md:h-40">
-                    <div class="text-yellow-400 mb-2">
+                    <div class="text-yellow-500 mb-2">
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3" /></svg>
                     </div>
                     <div>
                         <h3 class="text-white font-semibold text-sm mb-1">Music</h3>
-                        <p class="text-zinc-400 text-[10px] md:text-xs leading-snug">Curated, calming soundscapes.</p>
+                        <p class="text-secondary text-[10px] md:text-xs leading-snug">Curated, calming soundscapes.</p>
                     </div>
                 </div>
                 <!-- Story -->
                 <div class="glass-card p-4 md:p-6 flex flex-col justify-between h-32 md:h-40">
-                      <div class="text-yellow-400 mb-2">
+                      <div class="text-yellow-500 mb-2">
                           <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" /></svg>
                       </div>
                     <div>
                         <h3 class="text-white font-semibold text-sm mb-1">Story</h3>
-                        <p class="text-zinc-400 text-[10px] md:text-xs leading-snug">Local history and culture.</p>
+                        <p class="text-secondary text-[10px] md:text-xs leading-snug">Local history and culture.</p>
                     </div>
                 </div>
                 <!-- City Info -->
                 <div class="glass-card p-4 md:p-6 flex flex-col justify-between h-32 md:h-40">
-                      <div class="text-yellow-400 mb-2">
+                      <div class="text-yellow-500 mb-2">
                           <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
                       </div>
                     <div>
                         <h3 class="text-white font-semibold text-sm mb-1">City Info</h3>
-                        <p class="text-zinc-400 text-[10px] md:text-xs leading-snug">Real-time updates.</p>
+                        <p class="text-secondary text-[10px] md:text-xs leading-snug">Real-time updates.</p>
                     </div>
                 </div>
                 <!-- Record -->
-                <div class="glass-card p-4 md:p-6 flex flex-col justify-between h-32 md:h-40 bg-zinc-800/80 border-zinc-600/30">
+                <div class="glass-card p-4 md:p-6 flex flex-col justify-between h-32 md:h-40 bg-zinc-900/50 border-zinc-700/30">
                       <div class="text-red-500 mb-2 animate-pulse">
                           <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="currentColor" viewBox="0 0 24 24"><circle cx="12" cy="12" r="6" /></svg>
                       </div>
                     <div>
                         <h3 class="text-white font-semibold text-sm mb-1">Record</h3>
-                        <p class="text-zinc-400 text-[10px] md:text-xs leading-snug">Leave community feedback.</p>
+                        <p class="text-secondary text-[10px] md:text-xs leading-snug">Leave community feedback.</p>
                     </div>
                 </div>
             </div>
@@ -334,7 +436,7 @@
     <!-- 3. Control -->
     <section id="universal" class="content-section justify-end px-6 md:px-24">
         <div class="w-full max-w-sm text-right">
-            <h2 class="section-title text-3xl md:text-4xl font-bold mb-6 text-white">Universal Control.</h2>
+            <h2 class="section-title text-3xl md:text-4xl font-bold mb-6">Universal Control.</h2>
             <div id="tactile-card" class="glass-card p-6 md:p-8 inline-block text-left w-full">
                 <div class="flex items-center gap-4 mb-4">
                     <div class="w-12 h-12 rounded-full bg-yellow-500/20 flex items-center justify-center text-yellow-400">
@@ -342,10 +444,10 @@
                     </div>
                     <div>
                         <h3 class="text-lg font-bold text-white">Tactile Dial</h3>
-                        <p class="text-xs text-zinc-500 uppercase tracking-widest">Interface</p>
+                        <p class="text-xs text-secondary uppercase tracking-widest">Interface</p>
                     </div>
                 </div>
-                <p class="text-zinc-300 text-sm leading-relaxed">
+                <p class="text-secondary text-sm leading-relaxed">
                     A single, intuitive dial controls volume and playback using globally recognized symbols.
                 </p>
                 <div id="universal-overlay" class="mt-8 transition-opacity duration-500">
@@ -366,13 +468,10 @@
     <!-- 4. Access (Specs) -->
     <section id="specs" class="content-section min-h-screen flex flex-col justify-start items-center px-6 pt-32 relative">
         <div class="w-full max-w-3xl">
-            <div class="glass-card p-1 flex items-center gap-4 bg-red-900/10 border-red-500/20">
-                <div class="bg-red-500/10 p-4 h-full flex items-center rounded-xl">
-                    <span class="text-red-500 font-bold text-xs uppercase tracking-wider rotate-180" style="writing-mode: vertical-rl;">Admin</span>
-                </div>
-                <div class="py-4 pr-6 flex-grow">
+            <div class="glass-card p-6 flex items-center gap-4 bg-red-900/10 border-red-500/20">
+                <div class="flex-grow">
                     <h3 class="text-white font-bold text-lg">Maintenance Access</h3>
-                    <p class="text-zinc-400 text-sm mt-1 mb-3">
+                    <p class="text-secondary text-sm mt-1 mb-3">
                         The <span class="text-red-400">Restart Button</span> is concealed on the bottom face.
                     </p>
                     <!-- Integrated GitHub Project Link -->
@@ -773,24 +872,63 @@
         let previousMousePosition = { x: 0, y: 0 };
         let manualRotation = { x: 0, y: 0 };
 
-        const ambientLight = new THREE.AmbientLight(0xffffff, 0.15); scene.add(ambientLight);
-        const mainLight = new THREE.DirectionalLight(0xffffff, 1.5); mainLight.position.set(5, 5, 10); mainLight.castShadow = true; scene.add(mainLight);
-        const topLight = new THREE.SpotLight(0xffffff, 3.0); topLight.position.set(0, 10, 0); scene.add(topLight);
-        const fillLight = new THREE.PointLight(0xffaa00, 0.4); fillLight.position.set(-5, 0, 5); scene.add(fillLight);
+        // Updated Lighting for Dramatic Effect
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.05); // Reduced from 0.15 for more contrast
+        scene.add(ambientLight);
         
-        // CHANGE: Add BOTTOM light to make undercarriage visible
+        // Key Spotlight (Highlights from Top Right)
+        const spotLight1 = new THREE.SpotLight(0xffffff, 2.0);
+        spotLight1.position.set(5, 10, 5);
+        spotLight1.angle = Math.PI / 6;
+        spotLight1.penumbra = 0.5;
+        spotLight1.castShadow = true;
+        scene.add(spotLight1);
+
+        // Rim Light (Highlights edges from Back Left)
+        const spotLight2 = new THREE.SpotLight(0xffffff, 1.5);
+        spotLight2.position.set(-5, 5, -5);
+        spotLight2.angle = Math.PI / 4;
+        spotLight2.penumbra = 1.0;
+        scene.add(spotLight2);
+
+        // Fill Light (Subtle warm underglow)
+        const fillLight = new THREE.PointLight(0xffaa00, 0.2);
+        fillLight.position.set(-5, 0, 5);
+        scene.add(fillLight);
+        
+        // Bottom Light
         const bottomLight = new THREE.PointLight(0x444444, 1.0);
         bottomLight.position.set(0, -10, 0);
         scene.add(bottomLight);
 
         // MATERIALS
         const colorYellow = 0xFFA000; 
-        const matBody = new THREE.MeshPhysicalMaterial({ color: colorYellow, roughness: 1.0, metalness: 0.0, clearcoat: 0.0 });
-        const matBlack = new THREE.MeshStandardMaterial({ color: 0x050505, roughness: 0.8, metalness: 0.1 });
-        const colorGreen = 0x00A060; 
-        const matCyan = new THREE.MeshPhysicalMaterial({ color: 0x000000, roughness: 0.9, metalness: 0.0, emissive: colorGreen, emissiveIntensity: 3.0, clearcoat: 0.0 });
+        // Updated Chassis: High-quality molded plastic
+        const matBody = new THREE.MeshPhysicalMaterial({ 
+            color: colorYellow, 
+            roughness: 0.2, 
+            metalness: 0.1, 
+            clearcoat: 0.5 
+        });
+        
+        // Updated Grille: Matte Black Perforated
+        const matBlack = new THREE.MeshStandardMaterial({ 
+            color: 0x050505, 
+            roughness: 1.0, 
+            metalness: 0.0 
+        });
+        
+        // Updated Dial Center: Safety Green
+        const matSafetyGreen = new THREE.MeshPhysicalMaterial({
+            color: 0x39FF14, // Vibrant Neon Green
+            roughness: 0.2,
+            metalness: 0.0,
+            emissive: 0x114411,
+            emissiveIntensity: 0.2,
+            clearcoat: 0.3
+        });
+        
         const matSteel = new THREE.MeshStandardMaterial({ color: 0x888888, roughness: 0.35, metalness: 0.9 });
-        // CHANGE: Removed emissive properties and increased roughness for a "true red" non-lit look
         const matRedLED = new THREE.MeshStandardMaterial({ color: 0xFF0000, roughness: 0.5, metalness: 0.0 });
         const matBlackDot = new THREE.MeshStandardMaterial({ color: 0x010101, roughness: 1.0, metalness: 0.0, emissive: 0x000000 });
         const matGrayPress = new THREE.MeshStandardMaterial({ color: 0xaaaaaa, roughness: 0.8, metalness: 0.1 });
@@ -839,7 +977,9 @@
             rimGroup.add(slope);
         }
 
-        const btn = new THREE.Mesh(new THREE.CylinderGeometry(0.54, 0.54, 0.1, 64), matCyan); btn.rotation.x = Math.PI/2; btn.position.z = 0.02; btn.name = 'PLAY_PAUSE_BUTTON'; btn.userData.originalMat = matCyan;
+        // Updated Dial Button Material to Safety Green
+        const btn = new THREE.Mesh(new THREE.CylinderGeometry(0.54, 0.54, 0.1, 64), matSafetyGreen); 
+        btn.rotation.x = Math.PI/2; btn.position.z = 0.02; btn.name = 'PLAY_PAUSE_BUTTON'; btn.userData.originalMat = matSafetyGreen;
         dialGroup.add(btn); clickableObjects.push(btn); deviceGroup.add(dialGroup);
 
         // Speaker
@@ -960,8 +1100,9 @@
                 else if (ie.name === 'RECORD_BUTTON') AudioManager.toggleRecord(() => { redDotLED.material = matRedLED; showMessage("Recording...", 50000); }, () => { redDotLED.material = matBlackDot; });
                 // CHANGE: Added delay and message for Restart Button click instead of instant reload
                 else if (ie.name === 'RESTART_BUTTON') {
-                    showMessage("System Restarting...", 3000); 
-                    setTimeout(() => location.reload(), 1500);
+                    // NEW:
+                    AudioManager.stopAll();
+                    showMessage("System Resetted.", 2000); // Changed message
                 }
                 else if (ie.name === 'BOTTOM_AUX_BUTTON') showMessage("Service Port Accessed.", 2000);
 
@@ -1026,6 +1167,14 @@
             // Updated section order: specs moved, prototype moved to end
             const sections = ['front', 'functional', 'universal', 'specs', 'view360', 'prototype'];
             let bestMatch = sections[0]; let maxVis = 0;
+            
+            // Calculate Progress Bar Width
+            const scrollTop = window.scrollY;
+            const docHeight = document.documentElement.scrollHeight - window.innerHeight;
+            const scrollPercent = (scrollTop / docHeight) * 100;
+            const progressBar = document.getElementById('progress-bar');
+            if (progressBar) progressBar.style.width = scrollPercent + '%';
+
             sections.forEach(id => {
                 const el = document.getElementById(id);
                 if (!el) return;
@@ -1034,6 +1183,18 @@
                 if (visibleHeight > maxVis) { maxVis = visibleHeight; bestMatch = id; }
             });
             currentSection = bestMatch;
+            
+            // Update Active Nav State
+            document.querySelectorAll('.nav-item').forEach(item => {
+                const target = item.getAttribute('data-target');
+                if (target === currentSection) {
+                    item.classList.add('active');
+                    item.classList.remove('text-secondary'); // Changed for theme
+                } else {
+                    item.classList.remove('active');
+                    item.classList.add('text-secondary'); // Changed for theme
+                }
+            });
             
             const overlay = document.getElementById('universal-overlay');
             if(overlay) {
@@ -1085,9 +1246,9 @@
             if (currentSection === 'universal') {
                 const time = Date.now() * 0.003; 
                 const intensity = ((Math.sin(time) + 1) / 2) * 3.0;
-                matCyan.emissiveIntensity = intensity;
+                matSafetyGreen.emissiveIntensity = intensity;
             } else {
-                matCyan.emissiveIntensity += (3.0 - matCyan.emissiveIntensity) * 0.1;
+                matSafetyGreen.emissiveIntensity += (0.2 - matSafetyGreen.emissiveIntensity) * 0.1;
             }
             if (composer) composer.render(); else renderer.render(scene, camera);
         }
@@ -1109,8 +1270,10 @@
             animate();
         };
 
+        // NEW: Updated to Standby Button logic
         document.getElementById('btn-restart-overlay')?.addEventListener('click', () => {
-             showMessage("System Restarting...", 3000); setTimeout(() => location.reload(), 1000); 
+             AudioManager.stopAll();
+             showMessage("System Resetted.", 2000); // Updated Message
         });
         document.getElementById('btn-play-pause-overlay')?.addEventListener('click', toggleAudioPlayback);
         document.getElementById('btn-prev')?.addEventListener('click', () => AudioManager.playPrevTrack());
