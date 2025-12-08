@@ -24,7 +24,7 @@
             --color-text-primary: #ffffff;
             --color-text-secondary: #a1a1aa;
             
-            /* Liquid Glass Variables - Semi-Transparent (approx 50% opacity for balance) */
+            /* Liquid Glass Variables */
             --glass-bg: rgba(0, 0, 0, 0.5); 
             --glass-border: rgba(255, 255, 255, 0.15);
             --glass-highlight: rgba(255, 255, 255, 0.1);
@@ -32,18 +32,17 @@
             --glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
         }
 
-        body { 
+        /* Prevent default window scroll to allow custom wrapper to handle snapping */
+        html, body { 
+            height: 100%;
+            margin: 0;
+            overflow: hidden; /* Critical for custom scroll wrapper */
             font-family: 'Arial', sans-serif; 
-            overflow-x: hidden; 
             background-color: var(--color-surface); 
             color: var(--color-text-primary);
             user-select: none;
             -webkit-user-select: none;
             -webkit-tap-highlight-color: transparent;
-        }
-        
-        body.noscroll {
-            overflow: hidden;
         }
 
         /* Tech-Noir Atmosphere Overlays */
@@ -71,45 +70,65 @@
             pointer-events: none;
         }
         
-        html { scroll-behavior: smooth; }
-
         #canvas-container {
             position: fixed;
             top: 0;
             left: 0;
             width: 100%;
-            height: 100vh;
+            height: 100%;
             z-index: 1;
             outline: none;
             pointer-events: auto; 
         }
 
+        /* MAIN SCROLL WRAPPER FOR SNAPPING */
+        #main-scroll-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            overflow-y: scroll;
+            overflow-x: hidden;
+            scroll-behavior: smooth;
+            
+            /* UPDATED SNAP CONFIGURATION: Mandatory = Stronger Snap */
+            scroll-snap-type: y mandatory; 
+            z-index: 10;
+        }
+
         .content-section {
             position: relative;
-            z-index: 10;
             min-height: 100vh;
             display: flex;
             align-items: center;
             pointer-events: none; 
             opacity: 0; 
             transition: opacity 0.8s ease-in-out;
+            
+            /* Snap Alignment Points */
+            scroll-snap-align: start;
+            /* Normal allows fast scrolling, 'always' forces stop at every section */
+            scroll-snap-stop: normal; 
         }
         
         .content-section.is-visible {
             opacity: 1;
         }
 
-        #prototype.is-visible {
+        /* Allow interactions in Prototype and 360 View */
+        #prototype.is-visible, 
+        #view360.is-visible {
             pointer-events: auto;
         }
         
-        /* Glassmorphism 2.0 - Round Edge Dark Liquid Glass */
+        /* Glassmorphism */
         .glass-card {
             pointer-events: auto;
             background: var(--glass-bg);
             backdrop-filter: blur(var(--glass-blur));
             -webkit-backdrop-filter: blur(var(--glass-blur));
-            border-radius: 40px; /* Enhanced Roundness */
+            border-radius: 40px; 
             border: 1px solid var(--glass-border);
             border-top: 1px solid var(--glass-highlight);
             transition: transform 0.3s ease, border-color 0.3s ease;
@@ -170,7 +189,7 @@
             transition: opacity 0.5s;
         }
 
-        /* Nav Island Styles - Liquid */
+        /* Nav Island Styles */
         .nav-island {
             background: var(--glass-bg);
             backdrop-filter: blur(var(--glass-blur));
@@ -194,18 +213,22 @@
         
         .nav-item.active {
             background-color: var(--color-accent);
-            color: #000000; /* Black text on yellow bg for readability */
+            color: #000000; 
             box-shadow: 0 0 20px rgba(255, 213, 0, 0.2);
-            /* Removed font-weight change per request */
+        }
+        
+        /* Utility to hide scrollbar but allow scrolling */
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .no-scrollbar {
+            -ms-overflow-style: none;  /* IE and Edge */
+            scrollbar-width: none;  /* Firefox */
         }
 
         @media (max-width: 768px) {
-            .nav-brand-text {
-                display: none;
-            }
-            .nav-divider {
-                display: none;
-            }
+            .nav-brand-text { display: none; }
+            .nav-divider { display: none; }
         }
 
         #audio-start-overlay {
@@ -218,9 +241,6 @@
             display: flex;
             justify-content: center;
             align-items: center;
-            color: white;
-            font-size: 20px;
-            font-weight: 500;
             z-index: 1000;
             opacity: 1;
             transition: opacity 0.5s;
@@ -232,31 +252,24 @@
              pointer-events: none;
         }
 
-        /* Message Box - Matching Dark Liquid Theme */
         #message-box {
             position: fixed;
             top: 20%;
             left: 50%;
             transform: translate(-50%, -50%);
             padding: 1rem 2rem;
-            
-            /* Liquid Glass Effect matching .glass-card */
             background: var(--glass-bg);
             backdrop-filter: blur(var(--glass-blur));
             -webkit-backdrop-filter: blur(var(--glass-blur));
-            
-            border-radius: 50px; /* Full Pill Shape */
+            border-radius: 50px; 
             border: 1px solid var(--glass-border);
             border-top: 1px solid var(--glass-highlight);
-            
             color: var(--color-text-primary);
             z-index: 1000;
             opacity: 0;
             transition: opacity 0.5s, transform 0.5s;
             pointer-events: none;
-            
             box-shadow: var(--glass-shadow);
-            
             font-size: 14px;
             letter-spacing: 0.05em;
             width: auto;
@@ -268,7 +281,6 @@
         .cursor-grab { cursor: grab; }
         .cursor-grabbing { cursor: grabbing; }
 
-        /* Prototype Styles */
         .btn-press {
             transform: scale(0.96);
             filter: brightness(1.3);
@@ -307,10 +319,16 @@
             transition: width 0.1s linear;
             box-shadow: 0 0 10px rgba(255, 213, 0, 0.5);
         }
+        
+        /* 360 Interaction Zone */
+        #model-interaction-zone {
+            touch-action: none; /* Prevents scroll on mobile when interacting with model */
+            pointer-events: auto; /* Ensure events are captured */
+        }
 
     </style>
 </head>
-<body class="antialiased noscroll">
+<body class="antialiased">
 
     <!-- Cinematic Noise SVG Filter -->
     <svg style="display: none;">
@@ -333,6 +351,7 @@
     <!-- Progress Bar -->
     <div id="progress-bar"></div>
 
+    <!-- START OVERLAY -->
     <div id="audio-start-overlay" class="flex flex-col items-center p-4 text-center">
         <svg xmlns="http://www.w3.org/2000/svg" width="60" height="60" viewBox="0 0 24 24" fill="currentColor" class="text-yellow-500 mb-4 animate-pulse"><path d="M12 2C6.477 2 2 6.477 2 12s4.477 10 10 10 10-4.477 10-10S17.523 2 12 2zm0 18c-4.411 0-8-3.589-8-8s3.589-8 8-8 8 3.589 8 8-3.589 8-8 8z"/><path d="M10 8l6 4-6 4V8z"/></svg>
         <span class="text-sm uppercase tracking-widest">Tap Anywhere to Start</span>
@@ -359,262 +378,263 @@
             <a href="#universal" class="nav-item px-4 py-2 rounded-full text-xs font-bold hover:text-white" data-target="universal">CTRL</a>
             <a href="#specs" class="nav-item px-4 py-2 rounded-full text-xs font-bold hover:text-white" data-target="specs">INFO</a>
             <a href="#view360" class="nav-item px-4 py-2 rounded-full text-xs font-bold hover:text-white" data-target="view360">360°</a>
+            <a href="#research" class="nav-item px-4 py-2 rounded-full text-xs font-bold hover:text-white" data-target="research">RSRCH</a>
             <a href="#prototype" class="nav-item px-4 py-2 rounded-full text-xs font-bold hover:text-white" data-target="prototype">DEMO</a>
         </div>
     </nav>
     
-    <!-- Maintenance Overlay (Visuals reverted to Restart, Function is Standby) -->
-    <div id="maintenance-overlay" class="fixed bottom-40 left-1/2 transform -translate-x-1/2 p-3 rounded-xl bg-red-900/10 border-red-500/20 transition-opacity duration-500 z-40 opacity-0 pointer-events-none">
-        <button id="btn-restart-overlay" class="p-3 rounded-full bg-red-600 hover:bg-red-500 transition duration-200 text-white font-bold text-sm pointer-events-auto flex items-center gap-2" title="System Standby">
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11.412 10.356A8.001 8.001 0 0120 11.5M4 15V9" /></svg>
-            RESTART
-        </button>
-    </div>
-
-    <!-- 1. Main -->
-    <section id="front" class="content-section justify-center text-center px-6">
-        <div class="max-w-4xl mx-auto mt-[30vh]">
-            <h1 class="section-title text-4xl md:text-8xl font-bold mb-6 leading-tight">
-                Public Atmosphere.<br>Reimagined.
-            </h1>
-            <p class="text-secondary text-base md:text-xl max-w-2xl mx-auto leading-relaxed font-light">
-                An interactive audio experience designed to enhance community connection and deliver real-time information to Brantford.
-            </p>
-        </div>
-        <div class="scroll-indicator text-xs font-medium tracking-widest uppercase">Scroll</div>
-    </section>
-
-    <!-- 2. Function -->
-    <section id="functional" class="content-section justify-start px-6 md:px-24">
-        <div class="w-full max-w-md">
-            <h2 class="section-title text-3xl md:text-4xl font-bold mb-8">Core Functions.</h2>
-            <div class="bento-grid">
-                <!-- Music -->
-                <div class="glass-card p-4 md:p-6 flex flex-col justify-between h-32 md:h-40">
-                    <div class="text-yellow-500 mb-2">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3" /></svg>
-                    </div>
-                    <div>
-                        <h3 class="text-white font-semibold text-sm mb-1">Music</h3>
-                        <p class="text-secondary text-[10px] md:text-xs leading-snug">Curated, calming soundscapes.</p>
-                    </div>
-                </div>
-                <!-- Story -->
-                <div class="glass-card p-4 md:p-6 flex flex-col justify-between h-32 md:h-40">
-                      <div class="text-yellow-500 mb-2">
-                          <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" /></svg>
-                      </div>
-                    <div>
-                        <h3 class="text-white font-semibold text-sm mb-1">Story</h3>
-                        <p class="text-secondary text-[10px] md:text-xs leading-snug">Local history and culture.</p>
-                    </div>
-                </div>
-                <!-- City Info -->
-                <div class="glass-card p-4 md:p-6 flex flex-col justify-between h-32 md:h-40">
-                      <div class="text-yellow-500 mb-2">
-                          <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-                      </div>
-                    <div>
-                        <h3 class="text-white font-semibold text-sm mb-1">City Info</h3>
-                        <p class="text-secondary text-[10px] md:text-xs leading-snug">Real-time updates.</p>
-                    </div>
-                </div>
-                <!-- Record -->
-                <div class="glass-card p-4 md:p-6 flex flex-col justify-between h-32 md:h-40 bg-zinc-900/50 border-zinc-700/30">
-                      <div class="text-red-500 mb-2 animate-pulse">
-                          <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="currentColor" viewBox="0 0 24 24"><circle cx="12" cy="12" r="6" /></svg>
-                      </div>
-                    <div>
-                        <h3 class="text-white font-semibold text-sm mb-1">Record</h3>
-                        <p class="text-secondary text-[10px] md:text-xs leading-snug">Leave community feedback.</p>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </section>
-
-    <!-- 3. Control -->
-    <section id="universal" class="content-section justify-end px-6 md:px-24">
-        <div class="w-full max-w-sm text-right">
-            <h2 class="section-title text-3xl md:text-4xl font-bold mb-6">Universal Control.</h2>
-            <div id="tactile-card" class="glass-card p-6 md:p-8 inline-block text-left w-full">
-                <div class="flex items-center gap-4 mb-4">
-                    <div class="w-12 h-12 rounded-full bg-yellow-500/20 flex items-center justify-center text-yellow-400">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z" /></svg>
-                    </div>
-                    <div>
-                        <h3 class="text-lg font-bold text-white">Tactile Dial</h3>
-                        <p class="text-xs text-secondary uppercase tracking-widest">Interface</p>
-                    </div>
-                </div>
-                <p class="text-secondary text-sm leading-relaxed">
-                    A single, intuitive dial controls volume and playback using globally recognized symbols.
+    <!-- MAIN SCROLL CONTAINER (Captures interaction now) -->
+    <div id="main-scroll-container">
+        <!-- 1. Main -->
+        <section id="front" class="content-section justify-center text-center px-6">
+            <!-- Pushed down further (approx 2 lines lower) by increasing margin-top to 45vh -->
+            <div class="max-w-4xl mx-auto mt-[45vh]">
+                <h1 class="section-title text-4xl md:text-8xl font-bold mb-6 leading-tight">
+                    Public Atmosphere.<br>Reimagined.
+                </h1>
+                <p class="text-secondary text-base md:text-xl max-w-2xl mx-auto leading-relaxed font-light">
+                    An interactive audio experience designed to enhance community connection and deliver real-time information to Brantford.
                 </p>
-                <div id="universal-overlay" class="mt-8 transition-opacity duration-500">
-                    <div id="overlay-controls-container" class="glass-card p-4 pointer-events-auto w-full mx-auto" style="border-radius: 30px; border: none; background: rgba(0,0,0,0.3); backdrop-filter: blur(15px);">
-                        <div id="overlay-controls" class="flex justify-around items-center space-x-2 text-white">
-                            <button id="btn-vol-up" class="w-10 h-10 md:w-12 md:h-12 p-2 rounded-full hover:bg-white/20 transition duration-200"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14"/><path d="M5 12h14"/></svg></button>
-                            <button id="btn-prev" class="w-10 h-10 md:w-12 md:h-12 p-2 rounded-full hover:bg-white/20 transition duration-200"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="19 20 9 12 19 4 19 20"/><line x1="5" x2="5" y1="19" y2="5"/></svg></button>
-                            <button id="btn-play-pause-overlay" class="w-10 h-10 md:w-12 md:h-12 p-2 rounded-full hover:bg-white/20 transition duration-200"><svg id="play-pause-icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="currentColor" class="text-yellow-500"><path d="M3 22v-20l18 10-18 10z"/></svg></button>
-                            <button id="btn-next" class="w-10 h-10 md:w-12 md:h-12 p-2 rounded-full hover:bg-white/20 transition duration-200"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 4 15 12 5 20 5 4"/><line x1="19" x2="19" y1="5" y2="19"/></svg></button>
-                            <button id="btn-vol-down" class="w-10 h-10 md:w-12 md:h-12 p-2 rounded-full hover:bg-white/20 transition duration-200"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" x2="19" y1="12" y2="12"/></svg></button>
+            </div>
+            <div class="scroll-indicator text-xs font-medium tracking-widest uppercase">Scroll</div>
+        </section>
+
+        <!-- 2. Function -->
+        <section id="functional" class="content-section justify-start px-6 md:px-24">
+            <div class="w-full max-w-md">
+                <h2 class="section-title text-3xl md:text-4xl font-bold mb-8">Core Functions.</h2>
+                <div class="bento-grid">
+                    <!-- Music -->
+                    <div class="glass-card p-4 md:p-6 flex flex-col justify-between h-32 md:h-40">
+                        <div class="text-yellow-500 mb-2">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3" /></svg>
+                        </div>
+                        <div>
+                            <h3 class="text-white font-semibold text-sm mb-1">Music</h3>
+                            <p class="text-secondary text-[10px] md:text-xs leading-snug">Curated, calming soundscapes.</p>
+                        </div>
+                    </div>
+                    <!-- Story -->
+                    <div class="glass-card p-4 md:p-6 flex flex-col justify-between h-32 md:h-40">
+                          <div class="text-yellow-500 mb-2">
+                              <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" /></svg>
+                          </div>
+                        <div>
+                            <h3 class="text-white font-semibold text-sm mb-1">Story</h3>
+                            <p class="text-secondary text-[10px] md:text-xs leading-snug">Local history and culture.</p>
+                        </div>
+                    </div>
+                    <!-- City Info -->
+                    <div class="glass-card p-4 md:p-6 flex flex-col justify-between h-32 md:h-40">
+                          <div class="text-yellow-500 mb-2">
+                              <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                          </div>
+                        <div>
+                            <h3 class="text-white font-semibold text-sm mb-1">City Info</h3>
+                            <p class="text-secondary text-[10px] md:text-xs leading-snug">Real-time updates.</p>
+                        </div>
+                    </div>
+                    <!-- Record -->
+                    <div class="glass-card p-4 md:p-6 flex flex-col justify-between h-32 md:h-40 bg-zinc-900/50 border-zinc-700/30">
+                          <div class="text-red-500 mb-2 animate-pulse">
+                              <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="currentColor" viewBox="0 0 24 24"><circle cx="12" cy="12" r="6" /></svg>
+                          </div>
+                        <div>
+                            <h3 class="text-white font-semibold text-sm mb-1">Record</h3>
+                            <p class="text-secondary text-[10px] md:text-xs leading-snug">Leave community feedback.</p>
                         </div>
                     </div>
                 </div>
             </div>
-        </div>
-    </section>
+        </section>
 
-    <!-- 4. Access (Specs) -->
-    <section id="specs" class="content-section min-h-screen flex flex-col justify-start items-center px-6 pt-32 relative">
-        <div class="w-full max-w-3xl">
-            <div class="glass-card p-6 flex items-center gap-4 bg-red-900/10 border-red-500/20">
-                <div class="flex-grow">
-                    <h3 class="text-white font-bold text-lg">Maintenance Access</h3>
-                    <p class="text-secondary text-sm mt-1 mb-3">
-                        The <span class="text-red-400">Restart Button</span> is concealed on the bottom face.
+        <!-- 3. Control -->
+        <section id="universal" class="content-section justify-end px-6 md:px-24">
+            <div class="w-full max-w-sm text-right">
+                <h2 class="section-title text-3xl md:text-4xl font-bold mb-6">Universal Control.</h2>
+                <div id="tactile-card" class="glass-card p-6 md:p-8 inline-block text-left w-full">
+                    <div class="flex items-center gap-4 mb-4">
+                        <div class="w-12 h-12 rounded-full bg-yellow-500/20 flex items-center justify-center text-yellow-400">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z" /></svg>
+                        </div>
+                        <div>
+                            <h3 class="text-lg font-bold text-white">Tactile Dial</h3>
+                            <p class="text-xs text-secondary uppercase tracking-widest">Interface</p>
+                        </div>
+                    </div>
+                    <p class="text-secondary text-sm leading-relaxed">
+                        A single, intuitive dial controls volume and playback using globally recognized symbols.
                     </p>
-                    <!-- Integrated GitHub Project Link -->
-                    <a href="https://github.com/elias-dzobo/soundscape" target="_blank" class="inline-flex items-center gap-2 text-[10px] uppercase tracking-widest text-zinc-500 hover:text-white transition-colors border border-zinc-700/50 rounded-full px-3 py-1 bg-black/20">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/></svg>
-                        System Source
-                    </a>
+                    <div id="universal-overlay" class="mt-8 transition-opacity duration-500">
+                        <div id="overlay-controls-container" class="glass-card p-4 pointer-events-auto w-full mx-auto" style="border-radius: 30px; border: none; background: rgba(0,0,0,0.3); backdrop-filter: blur(15px);">
+                            <div id="overlay-controls" class="flex justify-around items-center space-x-2 text-white">
+                                <button id="btn-vol-up" class="w-10 h-10 md:w-12 md:h-12 p-2 rounded-full hover:bg-white/20 transition duration-200"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14"/><path d="M5 12h14"/></svg></button>
+                                <button id="btn-prev" class="w-10 h-10 md:w-12 md:h-12 p-2 rounded-full hover:bg-white/20 transition duration-200"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="19 20 9 12 19 4 19 20"/><line x1="5" x2="5" y1="19" y2="5"/></svg></button>
+                                <button id="btn-play-pause-overlay" class="w-10 h-10 md:w-12 md:h-12 p-2 rounded-full hover:bg-white/20 transition duration-200"><svg id="play-pause-icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="currentColor" class="text-yellow-500"><path d="M3 22v-20l18 10-18 10z"/></svg></button>
+                                <button id="btn-next" class="w-10 h-10 md:w-12 md:h-12 p-2 rounded-full hover:bg-white/20 transition duration-200"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 4 15 12 5 20 5 4"/><line x1="19" x2="19" y1="5" y2="19"/></svg></button>
+                                <button id="btn-vol-down" class="w-10 h-10 md:w-12 md:h-12 p-2 rounded-full hover:bg-white/20 transition duration-200"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" x2="19" y1="12" y2="12"/></svg></button>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
-        </div>
-        <div class="scroll-indicator text-zinc-500 text-xs font-medium tracking-widest uppercase mt-8">Scroll for 360° View</div>
-    </section>
+        </section>
 
-    <!-- 5. 360 Degree View -->
-    <section id="view360" class="content-section justify-center items-end px-6 pb-24 cursor-grab">
-        <div class="text-center mb-12 pointer-events-none">
-            <div class="inline-flex items-center gap-2 bg-white/10 backdrop-blur-md px-6 py-3 rounded-full border border-white/10">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-yellow-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11.412 10.356A8.001 8.001 0 0120 11.5M4 15V9" /></svg>
-                <span class="text-sm font-bold text-white uppercase tracking-wider">Drag to Rotate 360°</span>
+        <!-- 4. Access (Specs) -->
+        <section id="specs" class="content-section min-h-screen flex flex-col justify-start items-center px-6 pt-32 relative">
+            <div class="w-full max-w-3xl">
+                <div class="glass-card p-6 flex items-center gap-4 bg-red-900/10 border-red-500/20">
+                    <div class="flex-grow">
+                        <h3 class="text-white font-bold text-lg">Maintenance Access</h3>
+                        <p class="text-secondary text-sm mt-1 mb-3">
+                            The <span class="text-red-400">Restart Button</span> is concealed on the bottom face.
+                        </p>
+                        <!-- Integrated GitHub Project Link -->
+                        <a href="https://github.com/elias-dzobo/soundscape" target="_blank" class="inline-flex items-center gap-2 text-[10px] uppercase tracking-widest text-zinc-500 hover:text-white transition-colors border border-zinc-700/50 rounded-full px-3 py-1 bg-black/20">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/></svg>
+                            System Source
+                        </a>
+                    </div>
+                </div>
             </div>
-        </div>
-        <footer class="absolute bottom-6 w-full text-center text-white/50 text-xs tracking-wider uppercase flex flex-col items-center gap-2">
-            <span>Designed for Brantford &copy; 2025</span>
-            <a href="https://github.com/elias-dzobo/soundscape" target="_blank" class="opacity-50 hover:opacity-100 transition-opacity">
-                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/></svg>
-            </a>
-        </footer>
-    </section>
-
-    <!-- 6. Prototype Interaction Layer (Updated to match 3D Model Geometry) -->
-    <section id="prototype" class="content-section flex justify-center items-center overflow-hidden relative w-full h-screen bg-black/80 backdrop-blur-xl z-50">
-        <div class="landscape-hint hidden absolute top-0 left-0 w-full h-full bg-black/90 z-[60] flex-col items-center justify-center text-center p-8 pointer-events-none">
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12 text-yellow-500 mb-4 animate-bounce" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>
-            <p class="text-white text-sm uppercase tracking-widest">Rotate for Better View</p>
-        </div>
-
-        <div class="absolute top-4 w-full text-center pointer-events-none">
-             <p class="text-white/30 text-[10px] md:text-xs uppercase tracking-[0.3em]">Interactive Mobile Prototype</p>
-        </div>
-        
-        <!-- Physical Device Container (Aspect 5.75 / 2.2) -->
-        <!-- Matches #FFD500 (More Yellow) with subtle inset shadow to mimic 3D lighting -->
-        <!-- Adjusted width to 98vw for better mobile fit -->
-        <div id="interface-shell" class="relative bg-[#FFD500] rounded-[20px] md:rounded-[30px] shadow-2xl pointer-events-auto" style="aspect-ratio: 5.75/2.2; width: 98vw; max-width: 1000px; box-shadow: inset 0 0 60px rgba(255,255,255,0.15), 0 20px 50px rgba(0,0,0,0.5);">
             
-            <!-- Left: Tactile Dial (Centered at x=-1.75 -> 19.5% from left) -->
-            <!-- Diameter 2.0 / 5.75 ~= 34.78% width. Height matches aspect. -->
-            <div id="demo-dial-container" class="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 aspect-square rounded-full flex items-center justify-center" style="left: 19.56%; width: 34.78%;">
-                <!-- SVG Rim Buttons (Matte Black 0x050505) -->
-                <!-- Reduced Outer Radius to 45 (from 50) to make it "less large" -->
-                <!-- Connected quadrants: 4 sectors of 90 degrees -->
-                <svg viewBox="0 0 100 100" class="absolute w-full h-full drop-shadow-xl">
-                    <defs>
-                        <filter id="inset-shadow">
-                            <feOffset dx="0" dy="1" />
-                            <feGaussianBlur stdDeviation="1" result="offset-blur" />
-                            <feComposite operator="out" in="SourceGraphic" in2="offset-blur" result="inverse" />
-                            <feFlood flood-color="black" flood-opacity="0.8" result="color" />
-                            <feComposite operator="in" in="color" in2="inverse" result="shadow" />
-                            <feComposite operator="over" in="shadow" in2="SourceGraphic" />
-                        </filter>
-                    </defs>
-
-                    <!-- Top (Vol Up) - 12 o'clock -->
-                    <path d="M 50 5 A 45 45 0 0 1 95 50 L 78 50 A 28 28 0 0 0 50 22 Z" transform="rotate(-45 50 50)" class="dial-segment" data-action="vol-up"></path>
-                    <!-- Right (Next) - 3 o'clock -->
-                    <path d="M 50 5 A 45 45 0 0 1 95 50 L 78 50 A 28 28 0 0 0 50 22 Z" transform="rotate(45 50 50)" class="dial-segment" data-action="next"></path>
-                    <!-- Bottom (Vol Down) - 6 o'clock -->
-                    <path d="M 50 5 A 45 45 0 0 1 95 50 L 78 50 A 28 28 0 0 0 50 22 Z" transform="rotate(135 50 50)" class="dial-segment" data-action="vol-down"></path>
-                    <!-- Left (Prev) - 9 o'clock -->
-                    <path d="M 50 5 A 45 45 0 0 1 95 50 L 78 50 A 28 28 0 0 0 50 22 Z" transform="rotate(225 50 50)" class="dial-segment" data-action="prev"></path>
-                    
-                    <!-- Icons on Dial -->
-                    <text x="50" y="15" fill="#666" font-size="8" text-anchor="middle" font-weight="bold" pointer-events="none" style="filter: drop-shadow(0px 1px 0px rgba(0,0,0,0.5));">+</text>
-                    <text x="50" y="88" fill="#666" font-size="10" text-anchor="middle" font-weight="bold" pointer-events="none" style="filter: drop-shadow(0px 1px 0px rgba(0,0,0,0.5));">-</text>
-                    <text x="88" y="53" fill="#666" font-size="6" text-anchor="middle" pointer-events="none" style="filter: drop-shadow(0px 1px 0px rgba(0,0,0,0.5));">►►</text>
-                    <text x="12" y="53" fill="#666" font-size="6" text-anchor="middle" pointer-events="none" style="filter: drop-shadow(0px 1px 0px rgba(0,0,0,0.5));">◄◄</text>
-                </svg>
-
-                <!-- Center Button (Play/Pause) -->
-                <button id="demo-play-btn" class="relative w-[54%] h-[54%] rounded-full bg-[#00A060] flex items-center justify-center shadow-[inset_0_2px_5px_rgba(255,255,255,0.2),0_5px_10px_rgba(0,0,0,0.3)] active:scale-95 transition-transform z-10" data-action="play">
-                     <svg id="demo-play-icon" xmlns="http://www.w3.org/2000/svg" class="h-10 w-10 text-black drop-shadow-sm" viewBox="0 0 24 24" fill="currentColor"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>
+            <!-- Restart Button MOVED HERE: Changed from fixed to absolute bottom-40 to sit on same 'layer' -->
+            <div id="maintenance-overlay" class="absolute bottom-40 left-1/2 transform -translate-x-1/2 p-3 rounded-xl bg-red-900/10 border-red-500/20 transition-opacity duration-500 z-40 opacity-0 pointer-events-none">
+                <button id="btn-restart-overlay" class="p-3 rounded-full bg-red-600 hover:bg-red-500 transition duration-200 text-white font-bold text-sm pointer-events-auto flex items-center gap-2" title="System Standby">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11.412 10.356A8.001 8.001 0 0120 11.5M4 15V9" /></svg>
+                    RESTART
                 </button>
             </div>
 
-            <!-- Middle: Speaker Grille (Centered at x=-0.21 -> 46.3% from left) -->
-            <!-- W 1.0 / 5.75 = 17.39%. H 1.8 / 2.2 = 81.8% -->
-            <div class="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 flex flex-col items-center justify-center" style="left: 46.34%; width: 17.39%; height: 81.8%;">
-                <!-- Matches "spkPlane" visual - Generated rows of alternating 9 and 10 dots -->
-                <script>
-                    const container = document.currentScript.parentNode;
-                    // Approx 20 rows to fit height
-                    for(let i=0; i<20; i++) {
-                        const row = document.createElement('div');
-                        // Increased spacing: gap-[5px] mb-[5px]
-                        row.className = "flex justify-center gap-[5px] mb-[5px] w-full";
-                        const count = (i % 2 === 0) ? 9 : 10;
-                        for(let j=0; j<count; j++) {
-                            const dot = document.createElement('div');
-                            // Updated dot size to w-2.5 h-2.5 (~10px) to match "too tiny" feedback while fitting
-                            dot.className = "w-2.5 h-2.5 bg-[#050505] rounded-full shadow-inner";
-                            row.appendChild(dot);
-                        }
-                        container.appendChild(row);
-                    }
-                </script>
+            <div class="scroll-indicator text-zinc-500 text-xs font-medium tracking-widest uppercase mt-8">Scroll for 360° View</div>
+        </section>
+
+        <!-- 5. 360 Degree View -->
+        <section id="view360" class="content-section justify-center items-end px-6 pb-24 cursor-grab">
+            <!-- Dedicated interaction zone that blocks scrolling -->
+            <div id="model-interaction-zone" class="absolute top-0 left-0 w-full h-full z-20" style="background: transparent;"></div>
+            
+            <!-- Drag Indicator -->
+            <div class="absolute bottom-32 left-1/2 transform -translate-x-1/2 z-30 pointer-events-none nav-island rounded-full px-6 py-3 flex items-center gap-2">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-yellow-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11.412 10.356A8.001 8.001 0 0120 11.5M4 15V9" /></svg>
+                <span class="text-sm font-bold text-white uppercase tracking-wider">Drag to Rotate 360°</span>
             </div>
 
-            <!-- Right: Function Buttons Housing (Centered at x=1.55 -> 76.9% from left) -->
-            <!-- Pad Group: W 2.24 (38.96%), H 1.74 (79.09%) -->
-            <div class="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 btn-housing" style="left: 76.95%; width: 38.96%; height: 79.09%;">
-                <!-- Grid Container for Buttons -->
-                <!-- GapX: 0.16 / 2.24 = 7.1%. GapY: 0.14 / 1.74 = 8% -->
-                <div class="w-full h-full grid grid-cols-2 grid-rows-2" style="padding: 8% 7.1%; gap: 8% 7.1%;">
-                    
-                    <!-- Top Left: Music (Matte Black) -->
-                    <button class="bg-[#111] rounded-xl shadow-[0_2px_4px_rgba(0,0,0,0.8),_inset_0_1px_1px_rgba(255,255,255,0.15)] flex flex-col items-center justify-center text-zinc-400 active:bg-black active:shadow-inner transition-all border-t border-white/10" data-action="music">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 mb-1 text-yellow-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3" /></svg>
-                        <span class="text-[9px] uppercase font-bold tracking-widest text-zinc-500">Music</span>
-                    </button>
-                    
-                    <!-- Top Right: Story (Matte Black) -->
-                    <button class="bg-[#111] rounded-xl shadow-[0_2px_4px_rgba(0,0,0,0.8),_inset_0_1px_1px_rgba(255,255,255,0.15)] flex flex-col items-center justify-center text-zinc-400 active:bg-black active:shadow-inner transition-all border-t border-white/10" data-action="story">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 mb-1 text-yellow-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" /></svg>
-                        <span class="text-[9px] uppercase font-bold tracking-widest text-zinc-500">Story</span>
-                    </button>
-                    
-                    <!-- Bottom Left: Info (Matte Black) -->
-                    <button class="bg-[#111] rounded-xl shadow-[0_2px_4px_rgba(0,0,0,0.8),_inset_0_1px_1px_rgba(255,255,255,0.15)] flex flex-col items-center justify-center text-zinc-400 active:bg-black active:shadow-inner transition-all border-t border-white/10" data-action="info">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 mb-1 text-yellow-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-                        <span class="text-[9px] uppercase font-bold tracking-widest text-zinc-500">Info</span>
-                    </button>
-                    
-                    <!-- Bottom Right: Record (Matte Steel / Silver) -->
-                    <button class="bg-gradient-to-br from-[#d4d4d4] via-[#999] to-[#666] rounded-xl shadow-[0_2px_4px_rgba(0,0,0,0.8),_inset_0_1px_1px_rgba(255,255,255,0.6)] flex flex-col items-center justify-center text-zinc-800 active:scale-95 transition-all relative border border-white/20" data-action="record">
-                        <!-- LED Indicator - Positioned relative to center (0.3, -0.2) -->
-                        <div id="demo-rec-led" class="absolute w-1.5 h-1.5 rounded-full bg-[#111] shadow-[inset_0_1px_2px_rgba(0,0,0,0.8),0_1px_0_rgba(255,255,255,0.5)] border border-black/20 transition-colors duration-200" style="right: 16%; bottom: 18%;"></div>
-                        <span class="text-[9px] uppercase font-bold tracking-widest text-zinc-900 drop-shadow-sm">Record</span>
+            <!-- Footer pushed LOWER using translate-y-12 (approx 3rem/48px down) -->
+            <footer class="absolute bottom-2 translate-y-12 w-full text-center text-white/50 text-xs tracking-wider uppercase flex flex-col items-center gap-2 relative z-30">
+                <span>Designed for Brantford &copy; 2025</span>
+                <a href="https://github.com/elias-dzobo/soundscape" target="_blank" class="opacity-50 hover:opacity-100 transition-opacity">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/></svg>
+                </a>
+            </footer>
+        </section>
+
+        <!-- 6. NEW: Research Process Section -->
+        <!-- Updated to bg-black/80 for transparent consistency -->
+        <section id="research" class="content-section flex flex-col justify-center items-center px-6 min-h-screen bg-black/80 backdrop-blur-xl z-40 text-center relative w-full">
+            <div class="max-w-4xl mx-auto">
+                <h2 class="section-title text-3xl md:text-5xl font-bold mb-6">Research Process.</h2>
+                <p class="text-secondary text-sm md:text-base max-w-2xl mx-auto leading-relaxed">
+                    (Content to be added)
+                </p>
+            </div>
+        </section>
+
+        <!-- 7. Prototype Interaction Layer -->
+        <section id="prototype" class="content-section flex justify-center items-center overflow-hidden relative w-full h-screen bg-black/80 backdrop-blur-xl z-50">
+            <div class="landscape-hint hidden absolute top-0 left-0 w-full h-full bg-black/90 z-[60] flex-col items-center justify-center text-center p-8 pointer-events-none">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12 text-yellow-500 mb-4 animate-bounce" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>
+                <p class="text-white text-sm uppercase tracking-widest">Rotate for Better View</p>
+            </div>
+
+            <div class="absolute top-4 w-full text-center pointer-events-none">
+                 <p class="text-white/30 text-[10px] md:text-xs uppercase tracking-[0.3em]">Interactive Mobile Prototype</p>
+            </div>
+            
+            <!-- Physical Device Container -->
+            <div id="interface-shell" class="relative bg-[#FFD500] rounded-[20px] md:rounded-[30px] shadow-2xl pointer-events-auto" style="aspect-ratio: 5.75/2.2; width: 98vw; max-width: 1000px; box-shadow: inset 0 0 60px rgba(255,255,255,0.15), 0 20px 50px rgba(0,0,0,0.5);">
+                
+                <!-- Left: Tactile Dial -->
+                <div id="demo-dial-container" class="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 aspect-square rounded-full flex items-center justify-center" style="left: 19.56%; width: 34.78%;">
+                    <svg viewBox="0 0 100 100" class="absolute w-full h-full drop-shadow-xl">
+                        <defs>
+                            <filter id="inset-shadow">
+                                <feOffset dx="0" dy="1" />
+                                <feGaussianBlur stdDeviation="1" result="offset-blur" />
+                                <feComposite operator="out" in="SourceGraphic" in2="offset-blur" result="inverse" />
+                                <feFlood flood-color="black" flood-opacity="0.8" result="color" />
+                                <feComposite operator="in" in="color" in2="inverse" result="shadow" />
+                                <feComposite operator="over" in="shadow" in2="SourceGraphic" />
+                            </filter>
+                        </defs>
+
+                        <!-- Top (Vol Up) -->
+                        <path d="M 50 5 A 45 45 0 0 1 95 50 L 78 50 A 28 28 0 0 0 50 22 Z" transform="rotate(-45 50 50)" class="dial-segment" data-action="vol-up"></path>
+                        <!-- Right (Next) -->
+                        <path d="M 50 5 A 45 45 0 0 1 95 50 L 78 50 A 28 28 0 0 0 50 22 Z" transform="rotate(45 50 50)" class="dial-segment" data-action="next"></path>
+                        <!-- Bottom (Vol Down) -->
+                        <path d="M 50 5 A 45 45 0 0 1 95 50 L 78 50 A 28 28 0 0 0 50 22 Z" transform="rotate(135 50 50)" class="dial-segment" data-action="vol-down"></path>
+                        <!-- Left (Prev) -->
+                        <path d="M 50 5 A 45 45 0 0 1 95 50 L 78 50 A 28 28 0 0 0 50 22 Z" transform="rotate(225 50 50)" class="dial-segment" data-action="prev"></path>
+                        
+                        <text x="50" y="15" fill="#666" font-size="8" text-anchor="middle" font-weight="bold" pointer-events="none" style="filter: drop-shadow(0px 1px 0px rgba(0,0,0,0.5));">+</text>
+                        <text x="50" y="88" fill="#666" font-size="10" text-anchor="middle" font-weight="bold" pointer-events="none" style="filter: drop-shadow(0px 1px 0px rgba(0,0,0,0.5));">-</text>
+                        <text x="88" y="53" fill="#666" font-size="6" text-anchor="middle" pointer-events="none" style="filter: drop-shadow(0px 1px 0px rgba(0,0,0,0.5));">►►</text>
+                        <text x="12" y="53" fill="#666" font-size="6" text-anchor="middle" pointer-events="none" style="filter: drop-shadow(0px 1px 0px rgba(0,0,0,0.5));">◄◄</text>
+                    </svg>
+
+                    <!-- Center Button -->
+                    <button id="demo-play-btn" class="relative w-[54%] h-[54%] rounded-full bg-[#00A060] flex items-center justify-center shadow-[inset_0_2px_5px_rgba(255,255,255,0.2),0_5px_10px_rgba(0,0,0,0.3)] active:scale-95 transition-transform z-10" data-action="play">
+                         <svg id="demo-play-icon" xmlns="http://www.w3.org/2000/svg" class="h-10 w-10 text-black drop-shadow-sm" viewBox="0 0 24 24" fill="currentColor"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>
                     </button>
                 </div>
+
+                <!-- Middle: Speaker Grille -->
+                <div class="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 flex flex-col items-center justify-center" style="left: 46.34%; width: 17.39%; height: 81.8%;">
+                    <script>
+                        const container = document.currentScript.parentNode;
+                        for(let i=0; i<20; i++) {
+                            const row = document.createElement('div');
+                            row.className = "flex justify-center gap-[5px] mb-[5px] w-full";
+                            const count = (i % 2 === 0) ? 9 : 10;
+                            for(let j=0; j<count; j++) {
+                                const dot = document.createElement('div');
+                                dot.className = "w-2.5 h-2.5 bg-[#050505] rounded-full shadow-inner";
+                                row.appendChild(dot);
+                            }
+                            container.appendChild(row);
+                        }
+                    </script>
+                </div>
+
+                <!-- Right: Function Buttons -->
+                <div class="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 btn-housing" style="left: 76.95%; width: 38.96%; height: 79.09%;">
+                    <div class="w-full h-full grid grid-cols-2 grid-rows-2" style="padding: 8% 7.1%; gap: 8% 7.1%;">
+                        
+                        <button class="bg-[#111] rounded-xl shadow-[0_2px_4px_rgba(0,0,0,0.8),_inset_0_1px_1px_rgba(255,255,255,0.15)] flex flex-col items-center justify-center text-zinc-400 active:bg-black active:shadow-inner transition-all border-t border-white/10" data-action="music">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 mb-1 text-yellow-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3" /></svg>
+                            <span class="text-[9px] uppercase font-bold tracking-widest text-zinc-500">Music</span>
+                        </button>
+                        
+                        <button class="bg-[#111] rounded-xl shadow-[0_2px_4px_rgba(0,0,0,0.8),_inset_0_1px_1px_rgba(255,255,255,0.15)] flex flex-col items-center justify-center text-zinc-400 active:bg-black active:shadow-inner transition-all border-t border-white/10" data-action="story">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 mb-1 text-yellow-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" /></svg>
+                            <span class="text-[9px] uppercase font-bold tracking-widest text-zinc-500">Story</span>
+                        </button>
+                        
+                        <button class="bg-[#111] rounded-xl shadow-[0_2px_4px_rgba(0,0,0,0.8),_inset_0_1px_1px_rgba(255,255,255,0.15)] flex flex-col items-center justify-center text-zinc-400 active:bg-black active:shadow-inner transition-all border-t border-white/10" data-action="info">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 mb-1 text-yellow-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                            <span class="text-[9px] uppercase font-bold tracking-widest text-zinc-500">Info</span>
+                        </button>
+                        
+                        <button class="bg-gradient-to-br from-[#d4d4d4] via-[#999] to-[#666] rounded-xl shadow-[0_2px_4px_rgba(0,0,0,0.8),_inset_0_1px_1px_rgba(255,255,255,0.6)] flex flex-col items-center justify-center text-zinc-800 active:scale-95 transition-all relative border border-white/20" data-action="record">
+                            <div id="demo-rec-led" class="absolute w-1.5 h-1.5 rounded-full bg-[#111] shadow-[inset_0_1px_2px_rgba(0,0,0,0.8),0_1px_0_rgba(255,255,255,0.5)] border border-black/20 transition-colors duration-200" style="right: 16%; bottom: 18%;"></div>
+                            <span class="text-[9px] uppercase font-bold tracking-widest text-zinc-900 drop-shadow-sm">Record</span>
+                        </button>
+                    </div>
+                </div>
             </div>
-        </div>
-    </section>
+        </section>
+    </div>
 
     <script>
     function showMessage(text, duration = 3000) {
@@ -631,21 +651,16 @@
     function updatePlayPauseIcon(playing) {
         const path = playing ? `<path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/>` : `<path d="M3 22v-20l18 10-18 10z"/>`;
         if (playPauseIcon) playPauseIcon.innerHTML = path;
-        
-        // Update Prototype Icon
         const demoIcon = document.getElementById('demo-play-icon');
         if (demoIcon) demoIcon.innerHTML = path;
     }
 
-    // AUDIO MANAGER
     const AudioManager = {
         trackList: ['jazz-background-music-333352.mp3', 'jazz-background-music-338663.mp3', 'jazz-background-music-379027.mp3', 'jazz-background-music-426859.mp3'],
         currentTrackIndex: 0, audioElement: null,
         sources: { recordBeep: new Audio('https://actions.google.com/sounds/v1/alarms/beep_short.ogg') },
         current: null, isRecording: false, recorder: null, stream: null, hasInteracted: false,
         voices: [],
-
-        // Content Libraries - Extended Paragraphs
         storyContent: [
             "Brantford is proudly known worldwide as the Telephone City. It was here, at his family's homestead—Melville House—on a humid summer day in 1874, that Alexander Graham Bell first conceived the revolutionary idea of the telephone. Just two years later, he proved his invention worked by successfully receiving a clear long-distance transmission from Paris, Ontario, forever changing how humanity connects.",
             "Art lovers know Brantford as the birthplace of Lawren Harris, a founder of the iconic Group of Seven. Born here in 1885, his childhood home still stands on West Colborne Street. The wealthy industrial atmosphere of turn-of-the-century Brantford provided the backdrop for his early life before he ventured north to paint the stark, spiritual landscapes that defined Canadian art.",
@@ -654,20 +669,14 @@
             "In the late 19th century, Brantford was an industrial titan, ranking third in all of Canada for export value. Factories here produced everything from Massey-Harris farm equipment to biscuits and textiles, shipping goods across the British Empire. That blue-collar grit and innovation laid the foundation for the resilient community we see today.",
             "The Grand River, a designated Canadian Heritage River, is the lifeblood of our landscape. It winds through the city offering some of the best fly-fishing for steelhead trout in the province. The extensive trail system along its banks allows residents to walk, cycle, and find a moment of peace right in the heart of the city."
         ],
-        
-        // Dynamic City Info Generator - Broadcast Style
         getCityInfo() {
             const time = new Date();
             const hour = time.getHours();
             const minutes = time.getMinutes();
             const timeString = `${hour % 12 || 12}:${minutes < 10 ? '0' + minutes : minutes} ${hour >= 12 ? 'PM' : 'AM'}`;
-            
-            // Greetings based on time
             let greeting = "Good morning";
             if(hour >= 12 && hour < 17) greeting = "Good afternoon";
             else if(hour >= 17) greeting = "Good evening";
-
-            // Random Weather Snippets
             const weather = [
                 "skies are currently clear with a pleasant temperature of 22 degrees",
                 "we are seeing some overcast clouds with a chance of light rain later this evening",
@@ -675,8 +684,6 @@
                 "winds are picking up slightly from the west, bringing cooler temperatures"
             ];
             const selectedWeather = weather[Math.floor(Math.random() * weather.length)];
-
-            // Random Local Updates
             const news = [
                 "In traffic news, construction on King George Road is causing minor delays, so please plan your route accordingly.",
                 "Community reminder: The Brantford Public Library is hosting a local author reading series tonight at 7 PM.",
@@ -685,10 +692,8 @@
                 "Transit update: Route 8 Holmedale is currently running five minutes behind schedule."
             ];
             const selectedNews = news[Math.floor(Math.random() * news.length)];
-
             return `${greeting}, Brantford. It is currently ${timeString}. The ${selectedWeather}. ${selectedNews}. Stay safe and enjoy your day.`;
         },
-
         init() {
             this.audioElement = new Audio();
             this.audioElement.loop = false; 
@@ -696,15 +701,9 @@
             this.sources.recordBeep.volume = 0.7;
             this.loadTrack(this.currentTrackIndex);
             this.audioElement.addEventListener('ended', () => { if (this.current === 'music' && isPlaying) this.playNextTrack(); });
-            
-            // Init Voices - Attempt to load immediately and on change
-            const loadVoices = () => {
-                this.voices = window.speechSynthesis.getVoices();
-            };
+            const loadVoices = () => { this.voices = window.speechSynthesis.getVoices(); };
             loadVoices();
-            if (window.speechSynthesis.onvoiceschanged !== undefined) {
-                window.speechSynthesis.onvoiceschanged = loadVoices;
-            }
+            if (window.speechSynthesis.onvoiceschanged !== undefined) { window.speechSynthesis.onvoiceschanged = loadVoices; }
         },
         loadTrack(index) {
             this.currentTrackIndex = (index % this.trackList.length + this.trackList.length) % this.trackList.length;
@@ -731,36 +730,15 @@
             this.stopAll();
             if (type === 'story' || type === 'info') {
                 let text = "";
-                if (type === 'story') {
-                    // Pick random story
-                    text = this.storyContent[Math.floor(Math.random() * this.storyContent.length)];
-                    showMessage("Playing Local History...", 3000);
-                } else {
-                    // Generate dynamic info
-                    text = this.getCityInfo();
-                    showMessage("Broadcasting City Info...", 3000);
-                }
-                
+                if (type === 'story') { text = this.storyContent[Math.floor(Math.random() * this.storyContent.length)]; showMessage("Playing Local History...", 3000); } 
+                else { text = this.getCityInfo(); showMessage("Broadcasting City Info...", 3000); }
                 const u = new SpeechSynthesisUtterance(text);
-                
-                // Voice Selection Logic: Prioritize Google, then "Natural", then default
-                // This tries to find a higher quality voice than the robotic default
                 if (this.voices.length > 0) {
-                    const preferredVoice = this.voices.find(v => v.name.includes('Google US English')) || 
-                                           this.voices.find(v => v.name.includes('Google UK English Female')) ||
-                                           this.voices.find(v => v.name.includes('Natural')) ||
-                                           this.voices.find(v => v.lang === 'en-US');
-                    if (preferredVoice) {
-                        u.voice = preferredVoice;
-                    }
+                    const preferredVoice = this.voices.find(v => v.name.includes('Google US English')) || this.voices.find(v => v.name.includes('Google UK English Female')) || this.voices.find(v => v.name.includes('Natural')) || this.voices.find(v => v.name.includes('en-US'));
+                    if (preferredVoice) { u.voice = preferredVoice; }
                 }
-
-                u.rate = 0.9; // Slightly slower is usually more intelligible and natural for TTS
-                u.pitch = 1.0;
-                
-                window.speechSynthesis.speak(u);
-                this.current = type;
-                u.onend = () => this.play('music'); 
+                u.rate = 0.9; u.pitch = 1.0;
+                window.speechSynthesis.speak(u); this.current = type; u.onend = () => this.play('music'); 
             }
         },
         async toggleRecord(onStart, onStop) {
@@ -784,7 +762,6 @@
         if (isPlaying) { AudioManager.stopBackgroundMusic(); isPlaying = false; showMessage("Paused", 1000); }
         else { AudioManager.play('music'); isPlaying = true; showMessage("Resumed", 1000); }
     }
-    // CHANGE: Update to remove noscroll class from body
     function hideInitialOverlay() {
         const overlay = document.getElementById('audio-start-overlay');
         if (overlay) overlay.classList.add('hidden');
@@ -793,34 +770,19 @@
 
     (function() {
         AudioManager.init();
-
-        // --- SCROLL OBSERVER (UPDATED FOR FADE IN/OUT) ---
         const observer = new IntersectionObserver((entries) => {
-            entries.forEach(entry => { 
-                // Toggle is-visible based on intersection state to allow fade out
-                entry.target.classList.toggle('is-visible', entry.isIntersecting);
-            });
+            entries.forEach(entry => { entry.target.classList.toggle('is-visible', entry.isIntersecting); });
         }, { threshold: 0.1 });
-        // Select all direct children that are 'fade-in-section' or the main container inside section
         document.querySelectorAll('.content-section').forEach(section => observer.observe(section));
 
-        // --- DEMO INTERACTION HANDLERS ---
         const demoContainer = document.getElementById('prototype');
         if (demoContainer) {
-            // Button Handlers
             demoContainer.addEventListener('click', (e) => {
                 const btn = e.target.closest('[data-action]');
                 if (!btn) return;
-
                 AudioManager.startBackground();
                 const action = btn.dataset.action;
-                
-                // Visual feedback
-                if(btn.tagName !== 'path') { // paths handled via css active state
-                    btn.classList.add('btn-press');
-                    setTimeout(() => btn.classList.remove('btn-press'), 150);
-                }
-
+                if(btn.tagName !== 'path') { btn.classList.add('btn-press'); setTimeout(() => btn.classList.remove('btn-press'), 150); }
                 if (action === 'play') toggleAudioPlayback();
                 else if (action === 'vol-up') AudioManager.volumeUp();
                 else if (action === 'vol-down') AudioManager.volumeDown();
@@ -829,16 +791,11 @@
                 else if (['music', 'story', 'info'].includes(action)) AudioManager.play(action);
                 else if (action === 'record') {
                     const led = document.getElementById('demo-rec-led');
-                    AudioManager.toggleRecord(
-                        () => { if(led) led.style.backgroundColor = 'red'; showMessage("Recording...", 50000); },
-                        () => { if(led) led.style.backgroundColor = '#111'; }
-                    );
+                    AudioManager.toggleRecord(() => { if(led) led.style.backgroundColor = 'red'; showMessage("Recording...", 50000); }, () => { if(led) led.style.backgroundColor = '#111'; });
                 }
             });
-            // Rotational gesture logic removed
         }
 
-        // --- THREE.JS CONFIG ---
         const container = document.getElementById('canvas-container');
         if(container.firstChild) container.removeChild(container.firstChild);
         const scene = new THREE.Scene(); scene.background = new THREE.Color(0x000000); 
@@ -872,68 +829,21 @@
         let previousMousePosition = { x: 0, y: 0 };
         let manualRotation = { x: 0, y: 0 };
 
-        // Updated Lighting for Dramatic Effect
-        const ambientLight = new THREE.AmbientLight(0xffffff, 0.05); // Reduced from 0.15 for more contrast
-        scene.add(ambientLight);
-        
-        // Key Spotlight (Highlights from Top Right)
-        const spotLight1 = new THREE.SpotLight(0xffffff, 2.0);
-        spotLight1.position.set(5, 10, 5);
-        spotLight1.angle = Math.PI / 6;
-        spotLight1.penumbra = 0.5;
-        spotLight1.castShadow = true;
-        scene.add(spotLight1);
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.05); scene.add(ambientLight);
+        const spotLight1 = new THREE.SpotLight(0xffffff, 2.0); spotLight1.position.set(5, 10, 5); spotLight1.angle = Math.PI / 6; spotLight1.penumbra = 0.5; spotLight1.castShadow = true; scene.add(spotLight1);
+        const spotLight2 = new THREE.SpotLight(0xffffff, 1.5); spotLight2.position.set(-5, 5, -5); spotLight2.angle = Math.PI / 4; spotLight2.penumbra = 1.0; scene.add(spotLight2);
+        const fillLight = new THREE.PointLight(0xffaa00, 0.2); fillLight.position.set(-5, 0, 5); scene.add(fillLight);
+        const bottomLight = new THREE.PointLight(0x444444, 1.0); bottomLight.position.set(0, -10, 0); scene.add(bottomLight);
 
-        // Rim Light (Highlights edges from Back Left)
-        const spotLight2 = new THREE.SpotLight(0xffffff, 1.5);
-        spotLight2.position.set(-5, 5, -5);
-        spotLight2.angle = Math.PI / 4;
-        spotLight2.penumbra = 1.0;
-        scene.add(spotLight2);
-
-        // Fill Light (Subtle warm underglow)
-        const fillLight = new THREE.PointLight(0xffaa00, 0.2);
-        fillLight.position.set(-5, 0, 5);
-        scene.add(fillLight);
-        
-        // Bottom Light
-        const bottomLight = new THREE.PointLight(0x444444, 1.0);
-        bottomLight.position.set(0, -10, 0);
-        scene.add(bottomLight);
-
-        // MATERIALS
         const colorYellow = 0xFFA000; 
-        // Updated Chassis: High-quality molded plastic
-        const matBody = new THREE.MeshPhysicalMaterial({ 
-            color: colorYellow, 
-            roughness: 0.2, 
-            metalness: 0.1, 
-            clearcoat: 0.5 
-        });
-        
-        // Updated Grille: Matte Black Perforated
-        const matBlack = new THREE.MeshStandardMaterial({ 
-            color: 0x050505, 
-            roughness: 1.0, 
-            metalness: 0.0 
-        });
-        
-        // Updated Dial Center: Safety Green
-        const matSafetyGreen = new THREE.MeshPhysicalMaterial({
-            color: 0x39FF14, // Vibrant Neon Green
-            roughness: 0.2,
-            metalness: 0.0,
-            emissive: 0x114411,
-            emissiveIntensity: 0.2,
-            clearcoat: 0.3
-        });
-        
+        const matBody = new THREE.MeshPhysicalMaterial({ color: colorYellow, roughness: 0.2, metalness: 0.1, clearcoat: 0.5 });
+        const matBlack = new THREE.MeshStandardMaterial({ color: 0x050505, roughness: 1.0, metalness: 0.0 });
+        const matSafetyGreen = new THREE.MeshPhysicalMaterial({ color: 0x39FF14, roughness: 0.2, metalness: 0.0, emissive: 0x114411, emissiveIntensity: 0.2, clearcoat: 0.3 });
         const matSteel = new THREE.MeshStandardMaterial({ color: 0x888888, roughness: 0.35, metalness: 0.9 });
         const matRedLED = new THREE.MeshStandardMaterial({ color: 0xFF0000, roughness: 0.5, metalness: 0.0 });
         const matBlackDot = new THREE.MeshStandardMaterial({ color: 0x010101, roughness: 1.0, metalness: 0.0, emissive: 0x000000 });
         const matGrayPress = new THREE.MeshStandardMaterial({ color: 0xaaaaaa, roughness: 0.8, metalness: 0.1 });
 
-        // GEOMETRY
         function createRoundedRect(w, h, r) {
             const shape = new THREE.Shape();
             shape.moveTo(-w/2 + r, h/2); shape.lineTo(w/2 - r, h/2); shape.quadraticCurveTo(w/2, h/2, w/2, h/2 - r);
@@ -947,42 +857,20 @@
         chassis.geometry.center(); deviceGroup.add(chassis);
         const Z_SURFACE = 0.38; 
 
-        // Left Dial
         const dialGroup = new THREE.Group(); dialGroup.position.set(-1.75, 0, Z_SURFACE);
-        
-        // CHANGE: Split rim into 4 quadrants
-        const segs = 4;
-        // CHANGE: Reduced gap size from 0.15 to 0.01 for a much smaller gap
-        const gap = 0.007; // Radians
-        const arc = (Math.PI * 2) / segs - gap;
+        const segs = 4; const gap = 0.007; const arc = (Math.PI * 2) / segs - gap;
         const rimGroup = new THREE.Group(); rimGroup.name = 'VOLUME_DIAL_RIM'; rimGroup.userData.originalMat = matBlack; dialGroup.add(rimGroup); clickableObjects.push(rimGroup);
-        
         for(let i=0; i<segs; i++) {
-            // Centers: 0 (Right), 1 (Top), 2 (Left), 3 (Bottom) -- based on standard circle angle 0 at +X
-            const centerAngle = i * (Math.PI/2);
-            const startAngle = centerAngle - arc/2;
-            
+            const centerAngle = i * (Math.PI/2); const startAngle = centerAngle - arc/2;
             const dish = new THREE.Mesh(new THREE.CylinderGeometry(0.9, 1.0, 0.15, 32, 1, false, startAngle, arc), matBlack);
-            dish.rotation.x = Math.PI/2; 
-            dish.position.z = -0.05; 
-            // CHANGE: Tag quadrant index
-            dish.userData.quadrant = i;
-            rimGroup.add(dish);
-
+            dish.rotation.x = Math.PI/2; dish.position.z = -0.05; dish.userData.quadrant = i; rimGroup.add(dish);
             const slope = new THREE.Mesh(new THREE.CylinderGeometry(0.56, 0.9, 0.2, 32, 1, true, startAngle, arc), matBlack);
-            slope.rotation.x = Math.PI/2; 
-            slope.position.z = 0.0; 
-            // CHANGE: Tag quadrant index
-            slope.userData.quadrant = i;
-            rimGroup.add(slope);
+            slope.rotation.x = Math.PI/2; slope.position.z = 0.0; slope.userData.quadrant = i; rimGroup.add(slope);
         }
-
-        // Updated Dial Button Material to Safety Green
         const btn = new THREE.Mesh(new THREE.CylinderGeometry(0.54, 0.54, 0.1, 64), matSafetyGreen); 
         btn.rotation.x = Math.PI/2; btn.position.z = 0.02; btn.name = 'PLAY_PAUSE_BUTTON'; btn.userData.originalMat = matSafetyGreen;
         dialGroup.add(btn); clickableObjects.push(btn); deviceGroup.add(dialGroup);
 
-        // Speaker
         const cvs = document.createElement('canvas'); cvs.width = 256; cvs.height = 512; const ctx = cvs.getContext('2d'); ctx.fillStyle = '#000000';
         const gridY = 20; const radius = 7; const padX = 10; const padY = 10; const stepY = (cvs.height - padY*2) / gridY; const baseStepX = (cvs.width - padX*2) / 9;
         for(let y=0; y<=gridY; y++) {
@@ -993,7 +881,6 @@
         const spkPlane = new THREE.Mesh(new THREE.PlaneGeometry(1.0, 1.8), new THREE.MeshPhysicalMaterial({ map: spkTex, color: 0x000000, roughness: 1.0, metalness: 0.0, clearcoat: 0.0, reflectivity: 0.0, transparent: true, alphaTest: 0.1 }));
         spkPlane.position.set(-0.21, 0, Z_SURFACE + 0.01); deviceGroup.add(spkPlane);
 
-        // Buttons
         const padGroup = new THREE.Group(); padGroup.position.set(1.55, 0, Z_SURFACE); 
         const hs = new THREE.Mesh(new THREE.ExtrudeGeometry(createRoundedRect(2.24, 1.74, 0.25), { depth: 0.05, bevelEnabled: false}), matBlack); hs.geometry.center(); hs.position.z = 0.02; padGroup.add(hs);
         const btnGeom = new THREE.ExtrudeGeometry(createRoundedRect(0.88, 0.66, 0.12), { depth: 0.02, bevelEnabled: true, bevelSize: 0.03, bevelThickness: 0.03 }); btnGeom.center();
@@ -1006,37 +893,27 @@
         });
         deviceGroup.add(padGroup);
         
-        // Restart Button (Shifted Center)
         const bottomButton = new THREE.Mesh(new THREE.ExtrudeGeometry(createRoundedRect(1.0, 0.2, 0.08), { depth: 0.02, bevelEnabled: true, bevelSize: 0.03, bevelThickness: 0.03 }), matBlack);
         bottomButton.geometry.center(); bottomButton.rotation.x = THREE.MathUtils.degToRad(-90); 
-        // CHANGE: Shifted restart button back to the right to make room for the centered aux button
-        bottomButton.position.set(1.5, -1.1, 0.3 - 0.1); 
-        bottomButton.name = 'RESTART_BUTTON'; bottomButton.userData.originalMat = matBlack;
+        bottomButton.position.set(1.5, -1.1, 0.3 - 0.1); bottomButton.name = 'RESTART_BUTTON'; bottomButton.userData.originalMat = matBlack;
         chassis.add(bottomButton); clickableObjects.push(bottomButton);
 
-        // NEW: Bottom Aux Button (Centered, Right)
-        // CHANGE: Used ExtrudeGeometry with rounded rect shape to match functional buttons
-        // CHANGE: Reverted width to 0.88, made it slimmer by reducing height to 0.3 and radius to 0.08
         const bottomAuxGeo = new THREE.ExtrudeGeometry(createRoundedRect(0.88, 0.3, 0.08), { depth: 0.02, bevelEnabled: true, bevelSize: 0.03, bevelThickness: 0.03 });
-        bottomAuxGeo.center();
-        const botAuxBtn = new THREE.Mesh(bottomAuxGeo, matBlack); // Uses matBlack (same as rim/3 buttons)
-        botAuxBtn.rotation.x = THREE.MathUtils.degToRad(90); // Face down
-        // CHANGE: Moved to center (0)
-        botAuxBtn.position.set(0, -1.15, 0); 
-        botAuxBtn.name = 'BOTTOM_AUX_BUTTON';
-        botAuxBtn.userData.originalMat = matBlack;
-        chassis.add(botAuxBtn);
-        clickableObjects.push(botAuxBtn);
+        bottomAuxGeo.center(); const botAuxBtn = new THREE.Mesh(bottomAuxGeo, matBlack); 
+        botAuxBtn.rotation.x = THREE.MathUtils.degToRad(90); botAuxBtn.position.set(0, -1.15, 0); 
+        botAuxBtn.name = 'BOTTOM_AUX_BUTTON'; botAuxBtn.userData.originalMat = matBlack;
+        chassis.add(botAuxBtn); clickableObjects.push(botAuxBtn);
 
         scene.add(deviceGroup);
 
         function onPointerDown(event) {
-            if (currentSection === 'view360') { 
-                isDragging = true; 
-                previousMousePosition = { x: event.clientX, y: event.clientY }; 
+            // FIX: Disable model interaction on Research page
+            if (currentSection === 'research') return;
+
+            if (currentSection === 'view360' && !event.target.closest('button') && !event.target.closest('a')) { 
+                isDragging = true; previousMousePosition = { x: event.clientX, y: event.clientY }; 
                 document.getElementById('view360').classList.add('cursor-grabbing'); 
                 document.getElementById('view360').classList.remove('cursor-grab'); 
-                // CHANGE: Hide UI on drag start
                 document.body.classList.add('hide-ui');
             }
 
@@ -1046,51 +923,26 @@
             const intersects = raycaster.intersectObjects(clickableObjects, true);
             if (intersects.length > 0) {
                 let ie = intersects[0].object;
+                
+                // FIX: Disable Restart Button on 360 page - Ensure this logic runs
+                if (currentSection === 'view360' && ie.name === 'RESTART_BUTTON') return;
+
                 const intersection = intersects[0]; const localPoint = intersection.point.clone(); 
-                let activeMeshes = []; // Store which meshes to animate
+                let activeMeshes = []; 
 
-                // CHANGE: Use parent (Group) transformation for accurate quadrant check
                 if (ie.parent && ie.parent.name === 'VOLUME_DIAL_RIM') {
-                    const rimGroup = ie.parent;
-                    const groupLocalPoint = intersection.point.clone();
-                    rimGroup.worldToLocal(groupLocalPoint); // Convert to group space which is XY plane aligned
-                    
-                    const relX = groupLocalPoint.x; 
-                    const relY = groupLocalPoint.y;
-                    
+                    const rimGroup = ie.parent; const groupLocalPoint = intersection.point.clone();
+                    rimGroup.worldToLocal(groupLocalPoint);
+                    const relX = groupLocalPoint.x; const relY = groupLocalPoint.y;
                     let targetQuad = -1;
-
                     if (Math.abs(relX) > Math.abs(relY) * 0.7) { 
-                        // Horizontal dominant
-                        if (relX > 0) { 
-                            AudioManager.playNextTrack(); 
-                            // CHANGE: Remapped Right to Index 1 (Visual Right)
-                            targetQuad = 1; 
-                        } else { 
-                            AudioManager.playPrevTrack(); 
-                            // CHANGE: Remapped Left to Index 3 (Visual Left)
-                            targetQuad = 3; 
-                        }
+                        if (relX > 0) { AudioManager.playNextTrack(); targetQuad = 1; } else { AudioManager.playPrevTrack(); targetQuad = 3; }
                     } else { 
-                        // Vertical dominant
-                        if (relY > 0) { 
-                            AudioManager.volumeUp(); 
-                            // CHANGE: Remapped Top to Index 2 (Visual Top)
-                            targetQuad = 2; 
-                        } else { 
-                            AudioManager.volumeDown(); 
-                            // CHANGE: Remapped Bottom to Index 0 (Visual Bottom)
-                            targetQuad = 0; 
-                        }
+                        if (relY > 0) { AudioManager.volumeUp(); targetQuad = 2; } else { AudioManager.volumeDown(); targetQuad = 0; }
                     }
-                    // Treat group as the interactive element for animation, but filter children
-                    ie = ie.parent; 
-                    activeMeshes = ie.children.filter(c => c.userData.quadrant === targetQuad);
+                    ie = ie.parent; activeMeshes = ie.children.filter(c => c.userData.quadrant === targetQuad);
                 } else {
-                    ie.worldToLocal(localPoint); // Normal logic for other buttons
-                    activeMeshes = [ie]; // For buttons, animate the button itself (except rimGroup children handled differently in loop?)
-                    // Actually for buttons 'ie' is the mesh. For rim, 'ie' becomes the Group.
-                    // The visual logic below uses ie.material or ie.children.
+                    ie.worldToLocal(localPoint); activeMeshes = [ie];
                 }
 
                 if (ie.name === 'PLAY_PAUSE_BUTTON') toggleAudioPlayback();
@@ -1098,35 +950,19 @@
                 else if (ie.name === 'STORY_BUTTON') AudioManager.play('story');
                 else if (ie.name === 'CITY_INFO_BUTTON') AudioManager.play('info');
                 else if (ie.name === 'RECORD_BUTTON') AudioManager.toggleRecord(() => { redDotLED.material = matRedLED; showMessage("Recording...", 50000); }, () => { redDotLED.material = matBlackDot; });
-                // CHANGE: Added delay and message for Restart Button click instead of instant reload
-                else if (ie.name === 'RESTART_BUTTON') {
-                    // NEW:
-                    AudioManager.stopAll();
-                    showMessage("System Resetted.", 2000); // Changed message
-                }
+                else if (ie.name === 'RESTART_BUTTON') { AudioManager.stopAll(); showMessage("System Resetted.", 2000); }
                 else if (ie.name === 'BOTTOM_AUX_BUTTON') showMessage("Service Port Accessed.", 2000);
 
                 const oz = ie.position.z; const oy = ie.position.y; const os = ie.scale.clone();
                 let momMat = matGrayPress;
                 
-                // VISUAL FEEDBACK LOGIC
-                if (ie.name === 'VOLUME_DIAL_RIM') {
-                    // CHANGE: Only light up active meshes for quadrant
-                    activeMeshes.forEach(c => c.material = momMat);
-                }
-                
+                if (ie.name === 'VOLUME_DIAL_RIM') { activeMeshes.forEach(c => c.material = momMat); }
                 if (['MUSIC_BUTTON', 'STORY_BUTTON', 'CITY_INFO_BUTTON', 'RECORD_BUTTON', 'BOTTOM_AUX_BUTTON'].includes(ie.name)) ie.material = momMat;
                 if (ie.name === 'RESTART_BUTTON' || ie.name === 'BOTTOM_AUX_BUTTON') ie.position.y += 0.01; else ie.position.z -= 0.01; ie.scale.set(0.98, 0.98, 0.98);
                 
                 setTimeout(() => {
                     if (ie.name === 'RESTART_BUTTON' || ie.name === 'BOTTOM_AUX_BUTTON') ie.position.y = oy; else ie.position.z = oz; ie.scale.copy(os);
-                    
-                    if (ie.name === 'VOLUME_DIAL_RIM') {
-                        // CHANGE: Revert active meshes only
-                        activeMeshes.forEach(c => c.material = matBlack);
-                    } else if (ie.name !== 'PLAY_PAUSE_BUTTON') {
-                        ie.material = ie.userData.originalMat || matBlack;
-                    }
+                    if (ie.name === 'VOLUME_DIAL_RIM') { activeMeshes.forEach(c => c.material = matBlack); } else if (ie.name !== 'PLAY_PAUSE_BUTTON') { ie.material = ie.userData.originalMat || matBlack; }
                 }, 150);
             }
         }
@@ -1142,16 +978,16 @@
                 isDragging = false; 
                 document.getElementById('view360').classList.remove('cursor-grabbing'); 
                 document.getElementById('view360').classList.add('cursor-grab'); 
-                // CHANGE: Show UI and reset model rotation on drag stop
                 document.body.classList.remove('hide-ui');
                 manualRotation = { x: 0, y: 0 };
             } 
         }
 
-        container.addEventListener('pointerdown', onPointerDown, false);
-        container.addEventListener('pointermove', onPointerMove, false);
-        container.addEventListener('pointerup', onPointerUp, false);
-        container.addEventListener('pointerleave', onPointerUp, false);
+        const interactionTarget = document.getElementById('main-scroll-container');
+        interactionTarget.addEventListener('pointerdown', onPointerDown, false);
+        interactionTarget.addEventListener('pointermove', onPointerMove, false);
+        interactionTarget.addEventListener('pointerup', onPointerUp, false);
+        interactionTarget.addEventListener('pointerleave', onPointerUp, false);
 
         const targets = {
             'front': { cam: {x:0, y:-0.8, z:8.5}, rot: {x:0, y:0, z:0} },
@@ -1159,18 +995,18 @@
             'universal': { cam: {x:-0.5, y:0, z:5}, rot: {x:0, y:-0.25, z:0} },
             'specs': { cam: {x:0, y:0.8, z:7}, rot: {x:THREE.MathUtils.degToRad(-90), y:0, z:0} },
             'view360': { cam: {x:0, y:0, z:7}, rot: null },
-            'prototype': { cam: {x:0, y:0, z:12}, rot: {x:0, y:0, z:0} } /* Move camera back for prototype view */
+            'research': { cam: {x:0, y:0, z:12}, rot: {x:0, y:0, z:0} }, 
+            'prototype': { cam: {x:0, y:0, z:12}, rot: {x:0, y:0, z:0} } 
         };
         let currentSection = 'front';
+        let previousSection = null; 
 
         function updateScroll() {
-            // Updated section order: specs moved, prototype moved to end
-            const sections = ['front', 'functional', 'universal', 'specs', 'view360', 'prototype'];
+            const sections = ['front', 'functional', 'universal', 'specs', 'view360', 'research', 'prototype'];
             let bestMatch = sections[0]; let maxVis = 0;
-            
-            // Calculate Progress Bar Width
-            const scrollTop = window.scrollY;
-            const docHeight = document.documentElement.scrollHeight - window.innerHeight;
+            const scrollContainer = document.getElementById('main-scroll-container');
+            const scrollTop = scrollContainer.scrollTop;
+            const docHeight = scrollContainer.scrollHeight - scrollContainer.clientHeight;
             const scrollPercent = (scrollTop / docHeight) * 100;
             const progressBar = document.getElementById('progress-bar');
             if (progressBar) progressBar.style.width = scrollPercent + '%';
@@ -1184,37 +1020,39 @@
             });
             currentSection = bestMatch;
             
-            // Update Active Nav State
-            document.querySelectorAll('.nav-item').forEach(item => {
-                const target = item.getAttribute('data-target');
-                if (target === currentSection) {
-                    item.classList.add('active');
-                    item.classList.remove('text-secondary'); // Changed for theme
-                } else {
-                    item.classList.remove('active');
-                    item.classList.add('text-secondary'); // Changed for theme
-                }
-            });
+            if (currentSection !== previousSection) {
+                const navContainer = document.querySelector('.nav-island .overflow-x-auto');
+                document.querySelectorAll('.nav-item').forEach(item => {
+                    const target = item.getAttribute('data-target');
+                    if (target === currentSection) {
+                        item.classList.add('active'); item.classList.remove('text-secondary'); 
+                        if (navContainer) {
+                            const itemRect = item.getBoundingClientRect();
+                            const containerRect = navContainer.getBoundingClientRect();
+                            const scrollLeft = navContainer.scrollLeft + (itemRect.left - containerRect.left) - (containerRect.width / 2) + (itemRect.width / 2);
+                            navContainer.scrollTo({ left: scrollLeft, behavior: 'smooth' });
+                        }
+                    } else { item.classList.remove('active'); item.classList.add('text-secondary'); }
+                });
+                previousSection = currentSection;
+            }
             
             const overlay = document.getElementById('universal-overlay');
             if(overlay) {
-                const isVisible = document.getElementById('universal').querySelector('.content-section.is-visible'); // Use generic class
-                // Actually the fade logic uses 'is-visible' on the section itself now
-                const universalSection = document.getElementById('universal');
-                const isUniversalVisible = universalSection.classList.contains('is-visible');
+                const isUniversalVisible = document.getElementById('universal').classList.contains('is-visible');
                 overlay.style.opacity = isUniversalVisible ? 1 : 0; 
                 overlay.style.pointerEvents = isUniversalVisible ? 'auto' : 'none';
             }
 
             const maintenanceOverlay = document.getElementById('maintenance-overlay');
             if(maintenanceOverlay) {
-                // CHANGE: Visibility logic: Show in 'specs' (Access), HIDE in 'view360'
                 const showMaint = (currentSection === 'specs'); 
                 maintenanceOverlay.style.opacity = showMaint ? 1 : 0; 
                 maintenanceOverlay.style.pointerEvents = showMaint ? 'auto' : 'none';
             }
         }
-        window.addEventListener('scroll', updateScroll);
+        
+        document.getElementById('main-scroll-container').addEventListener('scroll', updateScroll);
 
         function animate() {
             requestAnimationFrame(animate);
@@ -1225,15 +1063,11 @@
                 camera.position.z += (tgt.cam.z - camera.position.z) * 0.05;
 
                 if (currentSection === 'view360') {
-                    // Check if dragging or resetting
-                    // CHANGE: Reverted reset speed to 0.05 to match standard page speed
                     const lerpFactor = isDragging ? 0.2 : 0.05; 
-                    
                     deviceGroup.rotation.x += (manualRotation.x - deviceGroup.rotation.x) * lerpFactor;
                     deviceGroup.rotation.y += (manualRotation.y - deviceGroup.rotation.y) * lerpFactor;
                     deviceGroup.rotation.z += (0 - deviceGroup.rotation.z) * lerpFactor;
                 } else {
-                    // CHANGE: Reverted transition speed from 0.005 back to 0.05 for responsive navigation
                     deviceGroup.rotation.x += (tgt.rot.x - deviceGroup.rotation.x) * 0.05;
                     deviceGroup.rotation.y += (tgt.rot.y - deviceGroup.rotation.y) * 0.05;
                     deviceGroup.rotation.z += (tgt.rot.z - deviceGroup.rotation.z) * 0.05;
@@ -1242,7 +1076,6 @@
             }
             deviceGroup.position.y = Math.sin(Date.now() * 0.001) * 0.05;
 
-            // CHANGE: Battery Cycle - Pulse in UNIVERSAL (Control), Steady in others
             if (currentSection === 'universal') {
                 const time = Date.now() * 0.003; 
                 const intensity = ((Math.sin(time) + 1) / 2) * 3.0;
@@ -1267,14 +1100,11 @@
             if (loader) { loader.style.opacity = 0; setTimeout(() => { loader.style.display = 'none'; }, 500); }
             playPauseIcon = document.getElementById('play-pause-icon');
             updatePlayPauseIcon(true); 
+            updateScroll();
             animate();
         };
 
-        // NEW: Updated to Standby Button logic
-        document.getElementById('btn-restart-overlay')?.addEventListener('click', () => {
-             AudioManager.stopAll();
-             showMessage("System Resetted.", 2000); // Updated Message
-        });
+        document.getElementById('btn-restart-overlay')?.addEventListener('click', () => { AudioManager.stopAll(); showMessage("System Resetted.", 2000); });
         document.getElementById('btn-play-pause-overlay')?.addEventListener('click', toggleAudioPlayback);
         document.getElementById('btn-prev')?.addEventListener('click', () => AudioManager.playPrevTrack());
         document.getElementById('btn-next')?.addEventListener('click', () => AudioManager.playNextTrack());
