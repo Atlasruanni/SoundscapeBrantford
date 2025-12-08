@@ -248,10 +248,7 @@
 
         .bg-blob { position: absolute; border-radius: 50%; filter: blur(80px); opacity: 0.3; z-index: 0; }
         
-        .custom-scrollbar::-webkit-scrollbar { width: 4px; }
-        .custom-scrollbar::-webkit-scrollbar-track { background: rgba(125, 125, 125, 0.1); }
-        .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(125, 125, 125, 0.3); border-radius: 10px; }
-        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: rgba(125, 125, 125, 0.5); }
+        /* Removed custom scrollbar styles, using no-scrollbar only */
 
     </style>
 </head>
@@ -470,7 +467,7 @@
             <div class="bg-blob w-96 h-96 bg-yellow-600/20 top-[-10%] left-[-10%]"></div>
             <div class="bg-blob w-80 h-80 bg-blue-600/10 bottom-[-10%] right-[-10%]"></div>
 
-            <div class="w-full max-w-5xl h-[85vh] flex flex-col relative z-10">
+            <div class="w-full max-w-5xl h-[70vh] flex flex-col relative z-10">
                 <!-- Header: Reverted to include Client/Timeline -->
                 <div class="mb-8 text-center md:text-left pl-2">
                     <h2 class="text-3xl md:text-5xl font-bold text-theme-primary tracking-tight mb-2">Project Overview: Soundscape Brantford</h2>
@@ -482,7 +479,7 @@
                 </div>
 
                 <!-- Scrollable Content -->
-                <div class="glass-card p-8 md:p-12 overflow-y-auto custom-scrollbar space-y-12 text-left h-full">
+                <div class="glass-card p-8 md:p-12 overflow-y-auto no-scrollbar space-y-12 text-left h-full">
                     
                     <!-- 1. Introduction -->
                     <div>
@@ -829,7 +826,6 @@
         overlay.style.height = '100%';
         overlay.style.zIndex = '10000';
         overlay.style.display = 'grid';
-        
         // Updated density: 24 cols (Original 12 x 2)
         const cols = 24; 
         const rows = Math.ceil(cols * (window.innerHeight / window.innerWidth));
